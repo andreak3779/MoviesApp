@@ -1,19 +1,37 @@
 using Microsoft.AspNetCore.Mvc;
+using Moq;
 using System.Collections.Generic;
+using System.Linq;
 using Xunit;
+using MovieCollectionApi.Controllers;
+using MovieCollectionApi.Models;
 
 namespace MovieCollectionApi.Tests.Controllers
 {
     public class MovieControllerTest
     {
+        private readonly Mock<IList<Movie>> _mockMovies;
+        private readonly MovieController _controller;
+
+        public MovieControllerTest()
+        {
+            // Mock the in-memory movie list
+            _mockMovies = new Mock<IList<Movie>>();
+            _mockMovies.Setup(m => m.GetEnumerator()).Returns(new List<Movie>
+            {
+                new Movie { Id = 1, Title = "Inception", FilmGenre = "Sci-Fi", ReleaseYear = 2010 },
+                new Movie { Id = 2, Title = "The Godfather", FilmGenre = "Crime", ReleaseYear = 1972 }
+            }.GetEnumerator());
+
+            // Initialize the controller with the mocked list
+            _controller = new MovieController(_mockMovies.Object);
+        }
+
         [Fact]
         public void GetAll_ReturnsOkResult_WithListOfMovies()
         {
-            // Arrange
-            var controller = new MovieController();
-
             // Act
-            var result = controller.GetAll();
+            var result = _controller.GetAll();
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result.Result);
@@ -24,11 +42,8 @@ namespace MovieCollectionApi.Tests.Controllers
         [Fact]
         public void GetById_ExistingId_ReturnsOkResult_WithMovie()
         {
-            // Arrange
-            var controller = new MovieController();
-
             // Act
-            var result = controller.GetById(1);
+            var result = _controller.GetById(1);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result.Result);
@@ -39,11 +54,8 @@ namespace MovieCollectionApi.Tests.Controllers
         [Fact]
         public void GetById_NonExistingId_ReturnsNotFound()
         {
-            // Arrange
-            var controller = new MovieController();
-
             // Act
-            var result = controller.GetById(999);
+            var result = _controller.GetById(999);
 
             // Assert
             Assert.IsType<NotFoundResult>(result.Result);
@@ -53,11 +65,10 @@ namespace MovieCollectionApi.Tests.Controllers
         public void Create_ValidMovie_ReturnsCreatedAtAction()
         {
             // Arrange
-            var controller = new MovieController();
-            var newMovie = new Movie { Title = "Interstellar", Genre = "Sci-Fi", ReleaseYear = 2014 };
+            var newMovie = new Movie { Title = "Interstellar", FilmGenre = "Sci-Fi", ReleaseYear = 2014 };
 
             // Act
-            var result = controller.Create(newMovie);
+            var result = _controller.Create(newMovie);
 
             // Assert
             var createdAtAction = Assert.IsType<CreatedAtActionResult>(result.Result);
@@ -69,11 +80,10 @@ namespace MovieCollectionApi.Tests.Controllers
         public void Update_ExistingId_ReturnsNoContent()
         {
             // Arrange
-            var controller = new MovieController();
-            var updatedMovie = new Movie { Title = "Updated", Genre = "Drama", ReleaseYear = 2020 };
+            var updatedMovie = new Movie { Title = "Updated", FilmGenre = "Drama", ReleaseYear = 2020 };
 
             // Act
-            var result = controller.Update(1, updatedMovie);
+            var result = _controller.Update(1, updatedMovie);
 
             // Assert
             Assert.IsType<NoContentResult>(result);
@@ -83,11 +93,10 @@ namespace MovieCollectionApi.Tests.Controllers
         public void Update_NonExistingId_ReturnsNotFound()
         {
             // Arrange
-            var controller = new MovieController();
-            var updatedMovie = new Movie { Title = "Updated", Genre = "Drama", ReleaseYear = 2020 };
+            var updatedMovie = new Movie { Title = "Updated", FilmGenre = "Drama", ReleaseYear = 2020 };
 
             // Act
-            var result = controller.Update(999, updatedMovie);
+            var result = _controller.Update(999, updatedMovie);
 
             // Assert
             Assert.IsType<NotFoundResult>(result);
@@ -96,11 +105,8 @@ namespace MovieCollectionApi.Tests.Controllers
         [Fact]
         public void Delete_ExistingId_ReturnsNoContent()
         {
-            // Arrange
-            var controller = new MovieController();
-
             // Act
-            var result = controller.Delete(1);
+            var result = _controller.Delete(1);
 
             // Assert
             Assert.IsType<NoContentResult>(result);
@@ -109,11 +115,8 @@ namespace MovieCollectionApi.Tests.Controllers
         [Fact]
         public void Delete_NonExistingId_ReturnsNotFound()
         {
-            // Arrange
-            var controller = new MovieController();
-
             // Act
-            var result = controller.Delete(999);
+            var result = _controller.Delete(999);
 
             // Assert
             Assert.IsType<NotFoundResult>(result);
