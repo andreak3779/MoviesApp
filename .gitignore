@@ -1,1 +1,27 @@
-MovieCollectionApi/obj/*
+# Ignore build output directories
+**/bin/
+**/obj/
+
+# Ignore specific file types
+*.dll
+*.pdb
+*.exe
+*.cache
+*.txt
+*.json
+
+# Ignore runtime files
+*.genruntimeconfig.cache
+apphost
+
+# Ignore Visual Studio/IDE-specific files
+.vscode/
+*.user
+*.suo
+
+# Ignore temporary files
+*.tmp
+*.log
+
+# Ignore dependency directories
+node_modules/
