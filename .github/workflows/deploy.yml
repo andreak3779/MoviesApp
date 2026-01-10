@@ -49,5 +49,4 @@ jobs:
             sudo systemctl status ${{ vars.SERVICE_NAME }} || true;
             exit 1;
           }
-          sudo systemctl restart ${{ vars.SERVICE_NAME }} || { echo "Failed to restart service '${{ vars.SERVICE_NAME }}'"; exit 1; }
         EOF
