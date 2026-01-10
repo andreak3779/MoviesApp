@@ -38,6 +38,12 @@ jobs:
           # Navigate to the deployment directory configured as DEPLOY_DIR in GitHub repository/environment variables
           cd "${{ vars.DEPLOY_DIR }}" || { echo "Failed to change to deployment directory"; exit 1; }
 
+          # Ensure the working directory is clean before pulling to avoid merge conflicts or partial updates
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Working directory is not clean. Aborting deployment to avoid inconsistent state."
+            git status
+            exit 1
+          fi
           # Pull the latest changes
           git pull origin main || { echo "Failed to pull latest changes"; exit 1; }
 
