@@ -11,8 +11,8 @@ namespace MovieCollectionApi
         // In-memory list for demonstration purposes
         private static readonly List<Movie> Movies = new List<Movie>
         {
-            new Movie { Id = 1, Title = "Inception", Genre = "Sci-Fi", ReleaseYear = 2010 },
-            new Movie { Id = 2, Title = "The Godfather", Genre = "Crime", ReleaseYear = 1972 }
+            new Movie { Id = 1, Title = "Inception", FilmGenre = "Sci-Fi", ReleaseYear = 2010 },
+            new Movie { Id = 2, Title = "The Godfather", FilmGenre = "Crime", ReleaseYear = 1972 }
         };
 
         [HttpGet]
@@ -46,7 +46,7 @@ namespace MovieCollectionApi
                 return NotFound();
 
             movie.Title = updatedMovie.Title;
-            movie.Genre = updatedMovie.Genre;
+            movie.FilmGenre = updatedMovie.FilmGenre;
             movie.ReleaseYear = updatedMovie.ReleaseYear;
 
             return NoContent();
