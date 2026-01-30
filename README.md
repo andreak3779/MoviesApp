@@ -1,4 +1,4 @@
-# Jubilant Waddle
+# MovieCollectionApp
 
 This repository contains the **MovieCollectionApp**, a web application built with Angular.
 
