@@ -1,6 +1,6 @@
 {
   "name": "movies-app",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -24,6 +24,9 @@
   },
   "private": true,
   "packageManager": "npm@11.8.0",
+  "engines": {
+    "node": "24.11.1"
+  },
   "dependencies": {
     "@angular/cdk": "~21.1.4",
     "@angular/common": "^21.1.0",
@@ -51,6 +54,6 @@
     "jsdom": "^27.1.0",
     "typescript": "~5.9.2",
     "vitest": "^4.0.8",
-    "@mockoon/cli": "^1.19.0"
+    "@mockoon/cli": "^9.5.0"
   }
 }

@@ -1,11 +1,42 @@
 # MoviesApp
+# MoviesApp
 
+This repository contains the **MoviesApp**, a web application built with Angular.
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.1.1.
 
+## Project Structure
+
+The project is organized as follows:
+
+- **movies-app/**: Contains the Angular application source code.
+  - `src/`: Application source files.
+  - `public/`: Static assets.
+  - `.vscode/`: Visual Studio Code workspace configuration files.
+  - `package.json`: Project dependencies and scripts.
+  - `angular.json`: Angular CLI configuration.
+
+## Getting Started
+
+### Prerequisites
+
+Ensure you have the following installed:
+
+- [Node.js](https://nodejs.org/) (v16 or higher)
+- [Angular CLI](https://angular.dev/tools/cli) (v21.1.1)
+
+### Setup
+
+1. Clone the repository:
 ## Development server
 
 To start a local development server, run:
 
+- **movies-app/**: Contains the Angular application source code.
+  - `src/`: Application source files.
+  - `public/`: Static assets.
+  - `.vscode/`: Visual Studio Code workspace configuration files.
+  - `package.json`: Project dependencies and scripts.
+  - `angular.json`: Angular CLI configuration.
 ```bash
 ng serve
 ```
@@ -26,17 +57,15 @@ For a complete list of available schematics (such as `components`, `directives`,
 ng generate --help
 ```
 
-## Building
+   ```bash
+   git clone https://github.com/your-repo/MoviesApp.git
+   ```
 
 To build the project run:
 
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
+   ```bash
+   cd MoviesApp/movies-app
+   ```
 
 To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
 
