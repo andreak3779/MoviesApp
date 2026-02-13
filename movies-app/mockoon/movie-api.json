@@ -1,0 +1,82 @@
+{
+  "source": "mockoon:1.16.0",
+  "lastMigration": "1.16.0",
+  "data": {
+    "uuid": "a1b2c3d4-e5f6-7890-abcd-ef0123456789",
+    "name": "Movie API",
+    "endpointPrefix": "",
+    "port": 3001,
+    "routes": [
+      {
+        "uuid": "route-1",
+        "documentation": "Returns all movies",
+        "method": "get",
+        "endpoint": "/movies",
+        "responses": [
+          {
+            "uuid": "resp-1",
+            "statusCode": 200,
+            "label": "200 - list",
+            "body": "[{\"id\":1,\"title\":\"The Matrix\"},{\"id\":2,\"title\":\"Inception\"}]",
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "enabled": true
+          }
+        ],
+        "enabled": true
+      },
+      {
+        "uuid": "route-2",
+        "documentation": "Return single movie by id (example)",
+        "method": "get",
+        "endpoint": "/movies/:id",
+        "responses": [
+          {
+            "uuid": "resp-2",
+            "statusCode": 200,
+            "label": "200 - single",
+            "body": "{\"id\":1,\"title\":\"The Matrix\"}",
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "enabled": true
+          }
+        ],
+        "enabled": true
+      },
+      {
+        "uuid": "route-3",
+        "documentation": "Create movie (returns created movie)",
+        "method": "post",
+        "endpoint": "/movies",
+        "responses": [
+          {
+            "uuid": "resp-3",
+            "statusCode": 201,
+            "label": "201 - created",
+            "body": "{\"id\":3,\"title\":\"New Movie\"}",
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "enabled": true
+          }
+        ],
+        "enabled": true
+      }
+    ],
+    "settings": {
+      "proxy": {},
+      "cors": true
+    }
+  }
+}

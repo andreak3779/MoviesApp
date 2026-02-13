@@ -1,0 +1,42 @@
+name: CI — build & tests (with mock API)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          cd movies-app
+          npm ci
+
+      - name: Start mock server (Node fallback)
+        run: |
+          cd movies-app
+          nohup node scripts/mock-server.js > mock-server.log 2>&1 &
+          # wait for server to start
+          n=0
+          until curl -sS http://localhost:3001/health >/dev/null 2>&1 || [ $n -ge 10 ]; do
+            n=$((n+1))
+            sleep 1
+          done
+        env:
+          CI: true
+
+      - name: Run tests
+        run: |
+          cd movies-app
+          npm test -- --runInBand
