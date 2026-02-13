@@ -33,7 +33,7 @@ Ensure you have the following installed:
 2. Navigate to the project directory:
 
    ```bash
-   cd MoviesApp/movies-app-app
+   cd MoviesApp/movies-app
    ```
 
 3. Install dependencies:
