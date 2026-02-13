@@ -57,3 +57,140 @@ Angular CLI does not come with an end-to-end testing framework by default. You c
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+
+## Setup
+
+Prerequisites:
+- Node.js (recommended LTS 18+)
+- npm (comes with Node)
+
+Install dependencies for development (run from the repo root):
+
+```bash
+# install deps for the Angular app
+cd movies-app
+npm install
+# or, if you prefer a clean install using the lockfile when it is in sync:
+# npm ci
+```
+
+Notes:
+- If `npm ci` fails with a lockfile mismatch, run `npm install` to update the lockfile, then commit the updated lockfile if appropriate.
+- Many commands in this README assume you are in the `movies-app/` directory.
+
+## Overview — recent changes
+
+- Repository now targets the consolidated application name `movies-app` (client + optional SSR).
+- A small mock API is included under `movies-app/mockoon/` with a Node fallback at `movies-app/scripts/mock-server.js` for local development.
+
+## Architecture (high level)
+
+The application is a single Angular app with optional server-side rendering (SSR) powered by Express.
+
+- Client entry: `movies-app/src/main.ts`
+- Server entry: `movies-app/src/main.server.ts` and `movies-app/server.ts`
+- Routes are split for client/server: `movies-app/src/app/app.routes.ts` and `movies-app/src/app/app.routes.server.ts`
+- Domain models: `movies-app/src/app/models/`
+
+Simple architecture diagram (conceptual):
+
+```mermaid
+flowchart LR
+	Browser-->Client[Angular App]
+	Client-->|API calls|MockAPI[(Mock API / Backend)]
+	Client-->|SSR request|Server[Express + Angular SSR]
+	Server-->|renders|Browser
+```
+
+For a full diagram see `docs/moviesapp-diagram.mmd`.
+
+## Main flows & code snippets
+
+Example: service method that fetches all movies and returns an Observable (pattern used in `movies-app/src/app/services/movie-service.ts`):
+
+```ts
+// movies-app/src/app/services/movie-service.ts (excerpt)
+import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { Movie } from '../models/movie';
+
+@Injectable({ providedIn: 'root' })
+export class MovieService {
+	private base = 'http://localhost:3001'; // dev mock API base
+	constructor(private http: HttpClient) {}
+
+	getAllMovies(): Observable<Movie[]> {
+		return this.http.get<Movie[]>(`${this.base}/movies`);
+	}
+}
+```
+
+Example: using the service in a component with the `async` pipe:
+
+```html
+<!-- movies-app/src/app/app.html (excerpt) -->
+<ul>
+	<li *ngFor="let movie of movies$ | async">{{ movie.title }}</li>
+</ul>
+```
+
+```ts
+// movies-app/src/app/app.ts (excerpt)
+movies$ = this.movieService.getAllMovies();
+```
+
+## Mock API
+
+- Included environment: `movies-app/mockoon/movie-api.json` (importable into Mockoon GUI).
+- Node fallback server: `movies-app/scripts/mock-server.js` (run with `node movies-app/scripts/mock-server.js`).
+- NPM script (when using Mockoon CLI): `npm run mock-api` (starts mock on port 3001).
+
+## Developer checklist
+
+- Clone and install:
+
+```bash
+git clone <repo-url>
+cd movies-app
+npm ci
+```
+
+- Start mock API (optional):
+
+```bash
+# Node fallback
+node scripts/mock-server.js
+
+# or, if using Mockoon CLI
+npm run mock-api
+```
+
+- Run dev server:
+
+```bash
+npm start
+```
+
+- Run tests:
+
+```bash
+npm test
+```
+
+- Before creating a PR:
+	- Run `npm test` and fix failing tests.
+	- Keep changes small and focused; update or add unit tests for behavior changes.
+	- Format code per Prettier settings in `movies-app/package.json`.
+	- Do not commit secrets; use environment variables for credentials.
+
+## Useful links
+
+- App entry: `movies-app/src/main.ts`
+- Server: `movies-app/server.ts`, `movies-app/src/main.server.ts`
+- Movie model: `movies-app/src/app/models/movie.ts`
+- Movie service: `movies-app/src/app/services/movie-service.ts`
+- Mockoon env: `movies-app/mockoon/movie-api.json`
+- Agent guidance: `.github/copilot-instructions.md`, `.github/MOCKOON.md`
+
+If you'd like, I can generate a markdown-rendered architecture diagram file or add CI steps to start the mock server during tests.

@@ -7,7 +7,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "movie-collection-app": {
+    "movies-app": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -67,10 +67,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "movie-collection-app:build:production"
+              "buildTarget": "movies-app:build:production"
             },
             "development": {
-              "buildTarget": "movie-collection-app:build:development"
+              "buildTarget": "movies-app:build:development"
             }
           },
           "defaultConfiguration": "development"
