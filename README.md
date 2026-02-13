@@ -1,12 +1,12 @@
-# MovieCollectionApp
+# MoviesApp
 
-This repository contains the **MovieCollectionApp**, a web application built with Angular.
+This repository contains the **MoviesApp**, a web application built with Angular.
 
 ## Project Structure
 
 The project is organized as follows:
 
-- **movie-collection-app/**: Contains the Angular application source code.
+- **movies-app/**: Contains the Angular application source code.
   - `src/`: Application source files.
   - `public/`: Static assets.
   - `.vscode/`: Visual Studio Code workspace configuration files.
@@ -27,13 +27,13 @@ Ensure you have the following installed:
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/your-repo/jubilant-waddle.git
+   git clone https://github.com/your-repo/MoviesApp.git
    ```
 
 2. Navigate to the project directory:
 
    ```bash
-   cd jubilant-waddle/movie-collection-app
+   cd MoviesApp/movies-app-app
    ```
 
 3. Install dependencies:
