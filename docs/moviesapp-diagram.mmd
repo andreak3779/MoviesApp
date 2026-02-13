@@ -1,0 +1,34 @@
+graph LR
+  subgraph Client
+    App[App (src/app/app.ts)]
+    Header[MovieHeader]
+    List[MoviesList]
+    Watch[MovieWatchList]
+  end
+
+  subgraph NgRx
+    Store[NgRx Store / Effects]
+  end
+
+  Service[MovieService<br/>(movies-app/src/services/movie-service.ts)]
+  WatchService[MovieWatchListService]
+  Models[Models<br/>(Movie, MediaType, MovieFormat)]
+  Server[SSR Server<br/>(src/server.ts, main.server.ts)]
+  Public[Public Assets<br/>(public/)]
+
+  App --> Header
+  App --> List
+  App --> Watch
+
+  Header -->|dispatch| Store
+  List -->|dispatch| Store
+  Watch -->|dispatch| Store
+
+  Store -->|effects -> calls| Service
+  Store -->|effects -> calls| WatchService
+
+  Service --> Models
+  WatchService --> Models
+
+  Server --> Service
+  App --> Public
