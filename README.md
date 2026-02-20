@@ -1,8 +1,11 @@
 # MoviesApp
-# MoviesApp
 
 This repository contains the **MoviesApp**, a web application built with Angular.
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.1.1.
+
+This is a code sample I am creating to demostrate my skills with Angular. 
+
+### **It is a work in progress**
 
 ## Project Structure
 
