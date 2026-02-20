@@ -1,13 +1,13 @@
-using MoviesWeb.Models;
-
 namespace MoviesWeb.Models
 {
-    public class UserFavouriteMovies
+    using System.Collections.Generic;
+
+    public class UserFavouriteMovies : IUserFavouriteMovies
     {
         public int UserFavouriteMoviesId { get; set; }
         public int UserId { get; set; }
 
-        public virtual User User { get; set; }
-        public virtual List<Movie>? Movies { get; set; }
+        public virtual IUser? User { get; set; }
+        public virtual IList<IMovie>? Movies { get; set; }
     }
 }
