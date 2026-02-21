@@ -1,16 +1,18 @@
 namespace MoviesWeb.Models
 {
-    public class Movie
+    using System;
+
+    public class Movie : IMovie
     {
         public int Id { get; set; }
         public string Title { get; set; }
-        public string Description { get; set; } 
+        public string Description { get; set; }
         public string Genre { get; set; }
         public string Director { get; set; }
         public int ReleaseYear { get; set; }
         public DateTime? ReleaseDate { get; set; }
-       
-        public virtual CriterionTitle? CriterionTitle { get; set; }
+
+        public virtual ICriterionTitle? CriterionTitle { get; set; }
 
         public Movie()
         {
