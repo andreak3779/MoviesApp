@@ -2,8 +2,13 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace MyApp.Namespace
 {
-    public class MovieController : Controller
+    public class MoviesController : Controller
     {
+        public MoviesController(IMovieServices movieServices)
+        {
+            
+        }
+        
         // GET: MovieController
         public ActionResult Index()
         {
