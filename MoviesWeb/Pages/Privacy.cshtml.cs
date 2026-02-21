@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-
-namespace MoviesWeb.Pages;
+﻿namespace MoviesWeb.Pages;
 
 public class PrivacyModel : PageModel
 {
