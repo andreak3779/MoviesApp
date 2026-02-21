@@ -1,9 +1,12 @@
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddControllersWithViews();
+builder.Services.AddHttpClient<IMoviesService, MoviesService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["MoviesApi:BaseUrl"] ?? string.Empty);
+});
 
 var app = builder.Build();
 
