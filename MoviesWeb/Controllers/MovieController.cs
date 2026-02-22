@@ -1,11 +1,19 @@
+
 namespace MyApp.Namespace
 {
     public class MovieController : Controller
     {
-        // GET: MovieController
-        public ActionResult Index()
+
+        private readonly IMovieService _movieService;
+
+        public MovieController(IMovieService movieService)
         {
-            return View();
+            _movieService = movieService ?? throw new ArgumentNullException(nameof(movieService));
+        }
+        // GET: MovieController
+        public IActionResult Index()
+        {
+            return View("List");
         }
 
     }
