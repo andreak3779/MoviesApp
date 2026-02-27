@@ -1,4 +1,4 @@
-﻿namespace MoviesWeb.Pages;
+﻿namespace MoviesWeb.Views;
 
 public class PrivacyModel : PageModel
 {

@@ -41,14 +41,14 @@ public class MoviesService : IMoviesService
         response.EnsureSuccessStatusCode();
     }   
 
-    public async Task<HttpResponseMessage> UpdateMovieAsync(Movie movie) {
-        var response = await _httpClient.PostAsJsonAsync("movies", movie);
+    public async Task UpdateMovieAsync(Movie movie) {
+        var response = await _httpClient.PutAsJsonAsync("movies", movie);
         if (!response.IsSuccessStatusCode)        {
             throw new System.Net.Http.HttpRequestException(
                 $"Failed to update movie with id {movie.Id}. Status code: {response.StatusCode}");
         }
         
-        return response.EnsureSuccessStatusCode();
+        response.EnsureSuccessStatusCode();
     }  
 
     public async Task CreateMovieAsync(Movie movie)
@@ -59,4 +59,5 @@ public class MoviesService : IMoviesService
     {
         return ValueTask.CompletedTask;
     }
+
 }
