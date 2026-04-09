@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="../build/MovieCollectionApi.props" />
-</Project>

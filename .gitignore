@@ -1,27 +1,47 @@
-# Ignore build output directories
+# Build output
 **/bin/
 **/obj/
 
-# Ignore specific file types
+# NuGet packages
+*.nupkg
+*.snupkg
+**/packages/
+!**/packages/build/
+
+# Publish output
+**/publish/
+**/PublishProfiles/
+
+# Compiled files
 *.dll
 *.pdb
 *.exe
+
+# Runtime & cache files
 *.cache
-*.txt
-*.json
-
-# Ignore runtime files
 *.genruntimeconfig.cache
-apphost
 
-# Ignore Visual Studio/IDE-specific files
-.vscode/
+# Visual Studio
+.vs/
 *.user
 *.suo
+*.userosscache
+*.userprefs
 
-# Ignore temporary files
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/
+
+# Temporary & log files
 *.tmp
 *.log
 
-# Ignore dependency directories
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Node.js (if applicable)
 node_modules/
