@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/home/andreak/src/laughing-broccoli/MovieCollectionApi/MovieCollectionApi.csproj": {}
+    "/home/andreak/src/MoviesAPI/MovieCollectionApi/MovieCollectionApi.csproj": {}
   },
   "projects": {
-    "/home/andreak/src/laughing-broccoli/MovieCollectionApi/MovieCollectionApi.csproj": {
+    "/home/andreak/src/MoviesAPI/MovieCollectionApi/MovieCollectionApi.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/andreak/src/laughing-broccoli/MovieCollectionApi/MovieCollectionApi.csproj",
+        "projectUniqueName": "/home/andreak/src/MoviesAPI/MovieCollectionApi/MovieCollectionApi.csproj",
         "projectName": "MovieCollectionApi",
-        "projectPath": "/home/andreak/src/laughing-broccoli/MovieCollectionApi/MovieCollectionApi.csproj",
+        "projectPath": "/home/andreak/src/MoviesAPI/MovieCollectionApi/MovieCollectionApi.csproj",
         "packagesPath": "/home/andreak/.nuget/packages/",
-        "outputPath": "/home/andreak/src/laughing-broccoli/MovieCollectionApi/obj/",
+        "outputPath": "/home/andreak/src/MoviesAPI/MovieCollectionApi/obj/",
         "projectStyle": "PackageReference",
         "crossTargeting": true,
         "configFilePaths": [
@@ -45,7 +45,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.100"
+        "SdkAnalysisLevel": "10.0.100"
       },
       "frameworks": {
         "net8.0": {
@@ -74,15 +74,15 @@
           "downloadDependencies": [
             {
               "name": "Microsoft.AspNetCore.App.Ref",
-              "version": "[8.0.22, 8.0.22]"
+              "version": "[8.0.25, 8.0.25]"
             },
             {
               "name": "Microsoft.NETCore.App.Host.linux-x64",
-              "version": "[8.0.22, 8.0.22]"
+              "version": "[8.0.25, 8.0.25]"
             },
             {
               "name": "Microsoft.NETCore.App.Ref",
-              "version": "[8.0.22, 8.0.22]"
+              "version": "[8.0.25, 8.0.25]"
             }
           ],
           "frameworkReferences": {
@@ -93,7 +93,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/9.0.112/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/10.0.105/PortableRuntimeIdentifierGraph.json"
         },
         "net9.0": {
           "targetAlias": "net9.0",
@@ -118,6 +118,12 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.NETCore.App.Host.linux-x64",
+              "version": "[9.0.14, 9.0.14]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.AspNetCore.App": {
               "privateAssets": "none"
@@ -126,7 +132,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/9.0.112/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/10.0.105/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
