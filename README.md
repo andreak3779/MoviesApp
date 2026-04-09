@@ -1,4 +1,4 @@
-# laughing-broccoli
+# MoviesAPI
 Example web API using REST for managing my movie collection.
 
 ---
@@ -36,9 +36,9 @@ The API exposes the following endpoints for managing movies:
 
 ---
 
-## Workflow for Laughing-Broccoli
+## Workflow for Movies API
 
-This document describes the workflow branching model for managing the development of the Laughing-Broccoli project.
+This document describes the workflow branching model for managing the development of the Movies API project.
 
 ### Branches
 
