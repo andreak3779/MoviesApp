@@ -1,0 +1,47 @@
+# Build output
+**/bin/
+**/obj/
+
+# NuGet packages
+*.nupkg
+*.snupkg
+**/packages/
+!**/packages/build/
+
+# Publish output
+**/publish/
+**/PublishProfiles/
+
+# Compiled files
+*.dll
+*.pdb
+*.exe
+
+# Runtime & cache files
+*.cache
+*.genruntimeconfig.cache
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.userprefs
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/
+
+# Temporary & log files
+*.tmp
+*.log
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Node.js (if applicable)
+node_modules/

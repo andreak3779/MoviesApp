@@ -1,0 +1,58 @@
+name: 'Deploy to Ubuntu Server'
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: 'Deploy to Ubuntu Server'
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout the repository
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # Set up SSH agent and add the private key
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.10.4
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    # Add the server's SSH host key to known_hosts to enable strict host key checking
+    - name: Add known_hosts for SSH
+      run: |
+        mkdir -p ~/.ssh
+        ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+
+    # Deploy the code to the server
+    - name: Deploy to Server
+      run: |
+        ssh -o StrictHostKeyChecking=yes ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+          set -e
+          # Navigate to the deployment directory configured as DEPLOY_DIR in GitHub repository/environment variables
+          cd "${{ vars.DEPLOY_DIR }}" || { echo "Failed to change to deployment directory"; exit 1; }
+
+          # Ensure the working directory is clean before pulling to avoid merge conflicts or partial updates
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Working directory is not clean. Aborting deployment to avoid inconsistent state."
+            git status
+            exit 1
+          fi
+          # Pull the latest changes
+          git pull origin main || { echo "Failed to pull latest changes"; exit 1; }
+
+          sudo systemctl restart ${{ vars.SERVICE_NAME }} || { echo "Failed to restart service '${{ vars.SERVICE_NAME }}'"; exit 1; }
+
+          # Verify that the service is running after restart
+          sudo systemctl is-active --quiet ${{ vars.SERVICE_NAME }} || {
+            echo "Service '${{ vars.SERVICE_NAME }}' is not running after restart";
+            sudo systemctl status ${{ vars.SERVICE_NAME }} || true;
+            exit 1;
+          }
+        EOF
