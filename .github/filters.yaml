@@ -1,0 +1,17 @@
+angular:
+  - 'apps/angular-client/**'
+
+mvc:
+  - 'apps/mvc-web/**'
+
+webapi:
+  - 'apps/web-api/**'
+
+shared:
+  - '.github/filters.yaml'
+  - '.github/workflows/**'
+  - 'README.md'
+  - 'AGENTS.md'
+  - '.env.example'
+  - 'docker-compose.yml'
+  - 'docs/**'

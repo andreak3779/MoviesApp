@@ -1,0 +1,138 @@
+name: Container Images
+
+on:
+  pull_request:
+    branches: [main, master]
+    paths:
+      - '.github/filters.yaml'
+      - '.github/workflows/container-images.yml'
+      - '.github/workflows/release-images.yml'
+      - 'docker-compose.yml'
+      - '.env.example'
+      - 'apps/angular-client/**'
+      - 'apps/mvc-web/**'
+      - 'apps/web-api/**'
+  push:
+    branches: [main, master]
+    paths:
+      - '.github/filters.yaml'
+      - '.github/workflows/container-images.yml'
+      - '.github/workflows/release-images.yml'
+      - 'docker-compose.yml'
+      - '.env.example'
+      - 'apps/angular-client/**'
+      - 'apps/mvc-web/**'
+      - 'apps/web-api/**'
+  workflow_dispatch:
+  schedule:
+    - cron: '0 5 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: container-images-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect changed scopes
+    runs-on: ubuntu-latest
+    outputs:
+      angular: ${{ steps.flags.outputs.angular }}
+      mvc: ${{ steps.flags.outputs.mvc }}
+      webapi: ${{ steps.flags.outputs.webapi }}
+      shared: ${{ steps.flags.outputs.shared }}
+    steps:
+      - name: Checkout repository
+        if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
+        uses: actions/checkout@v4
+
+      - name: Detect file changes
+        id: filters
+        if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
+        uses: dorny/paths-filter@v3
+        with:
+          filters: .github/filters.yaml
+
+      - name: Normalize scope flags
+        id: flags
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "schedule" || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo 'angular=true' >> "$GITHUB_OUTPUT"
+            echo 'mvc=true' >> "$GITHUB_OUTPUT"
+            echo 'webapi=true' >> "$GITHUB_OUTPUT"
+            echo 'shared=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'angular=${{ steps.filters.outputs.angular }}' >> "$GITHUB_OUTPUT"
+            echo 'mvc=${{ steps.filters.outputs.mvc }}' >> "$GITHUB_OUTPUT"
+            echo 'webapi=${{ steps.filters.outputs.webapi }}' >> "$GITHUB_OUTPUT"
+            echo 'shared=${{ steps.filters.outputs.shared }}' >> "$GITHUB_OUTPUT"
+          fi
+
+  build-angular-client:
+    name: build-angular-client
+    runs-on: ubuntu-latest
+    needs: changes
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.shared == 'true' || needs.changes.outputs.angular == 'true'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Angular client image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/angular-client
+          file: apps/angular-client/Dockerfile
+          push: false
+          tags: moviesapp/angular-client:${{ github.sha }}
+          cache-from: type=gha,scope=angular-client
+          cache-to: type=gha,scope=angular-client,mode=max
+
+  build-mvc-web:
+    name: build-mvc-web
+    runs-on: ubuntu-latest
+    needs: changes
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.shared == 'true' || needs.changes.outputs.mvc == 'true'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build MVC image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/mvc-web
+          file: apps/mvc-web/Dockerfile
+          push: false
+          tags: moviesapp/mvc-web:${{ github.sha }}
+          cache-from: type=gha,scope=mvc-web
+          cache-to: type=gha,scope=mvc-web,mode=max
+
+  build-web-api:
+    name: build-web-api
+    runs-on: ubuntu-latest
+    needs: changes
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.shared == 'true' || needs.changes.outputs.webapi == 'true'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Web API image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/web-api
+          file: apps/web-api/Dockerfile
+          push: false
+          tags: moviesapp/web-api:${{ github.sha }}
+          cache-from: type=gha,scope=web-api
+          cache-to: type=gha,scope=web-api,mode=max

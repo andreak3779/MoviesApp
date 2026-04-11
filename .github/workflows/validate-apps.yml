@@ -1,0 +1,196 @@
+name: Validate Apps
+
+on:
+  pull_request:
+    branches: [main, master]
+    paths:
+      - '.github/filters.yaml'
+      - '.github/workflows/**'
+      - 'README.md'
+      - 'AGENTS.md'
+      - '.env.example'
+      - 'docker-compose.yml'
+      - 'docs/**'
+      - 'apps/angular-client/**'
+      - 'apps/mvc-web/**'
+      - 'apps/web-api/**'
+  push:
+    branches: [main, master]
+    paths:
+      - '.github/filters.yaml'
+      - '.github/workflows/**'
+      - 'README.md'
+      - 'AGENTS.md'
+      - '.env.example'
+      - 'docker-compose.yml'
+      - 'docs/**'
+      - 'apps/angular-client/**'
+      - 'apps/mvc-web/**'
+      - 'apps/web-api/**'
+  workflow_dispatch:
+  schedule:
+    - cron: '0 4 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-apps-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+
+jobs:
+  changes:
+    name: Detect changed scopes
+    runs-on: ubuntu-latest
+    outputs:
+      angular: ${{ steps.flags.outputs.angular }}
+      mvc: ${{ steps.flags.outputs.mvc }}
+      webapi: ${{ steps.flags.outputs.webapi }}
+      shared: ${{ steps.flags.outputs.shared }}
+    steps:
+      - name: Checkout repository
+        if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
+        uses: actions/checkout@v4
+
+      - name: Detect file changes
+        id: filters
+        if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
+        uses: dorny/paths-filter@v3
+        with:
+          filters: .github/filters.yaml
+
+      - name: Normalize scope flags
+        id: flags
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "schedule" || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo 'angular=true' >> "$GITHUB_OUTPUT"
+            echo 'mvc=true' >> "$GITHUB_OUTPUT"
+            echo 'webapi=true' >> "$GITHUB_OUTPUT"
+            echo 'shared=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'angular=${{ steps.filters.outputs.angular }}' >> "$GITHUB_OUTPUT"
+            echo 'mvc=${{ steps.filters.outputs.mvc }}' >> "$GITHUB_OUTPUT"
+            echo 'webapi=${{ steps.filters.outputs.webapi }}' >> "$GITHUB_OUTPUT"
+            echo 'shared=${{ steps.filters.outputs.shared }}' >> "$GITHUB_OUTPUT"
+          fi
+
+  angular-client:
+    name: angular-client
+    runs-on: ubuntu-latest
+    needs: changes
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.shared == 'true' || needs.changes.outputs.angular == 'true'
+    defaults:
+      run:
+        working-directory: apps/angular-client
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.11.1
+          cache: npm
+          cache-dependency-path: apps/angular-client/package-lock.json
+
+      - name: Install Angular dependencies
+        run: npm ci
+
+      - name: Start mock API
+        env:
+          CI: true
+        run: |
+          nohup node scripts/mock-server.js > mock-server.log 2>&1 &
+          for attempt in {1..20}; do
+            if curl --silent --fail http://127.0.0.1:3001/health > /dev/null; then
+              exit 0
+            fi
+
+            sleep 1
+          done
+
+          echo 'Mock API did not become healthy in time.'
+          cat mock-server.log || true
+          exit 1
+
+      - name: Run Angular tests
+        env:
+          CI: true
+        run: npm test
+
+      - name: Build Angular app
+        env:
+          CI: true
+        run: npm run build
+
+  mvc-web:
+    name: mvc-web
+    runs-on: ubuntu-latest
+    needs: changes
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.shared == 'true' || needs.changes.outputs.mvc == 'true'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-mvc-${{ hashFiles('apps/mvc-web/**/*.csproj', 'apps/mvc-web/**/*.sln') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-mvc-
+
+      - name: Restore MVC solution
+        working-directory: apps/mvc-web
+        run: dotnet restore MoviesWeb.sln
+
+      - name: Build MVC solution
+        working-directory: apps/mvc-web
+        run: dotnet build MoviesWeb.sln --configuration Release --no-restore
+
+      - name: Test MVC solution
+        working-directory: apps/mvc-web
+        run: dotnet test MoviesWeb.sln --configuration Release --no-build --verbosity normal
+
+  web-api:
+    name: web-api
+    runs-on: ubuntu-latest
+    needs: changes
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.shared == 'true' || needs.changes.outputs.webapi == 'true'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-webapi-${{ hashFiles('apps/web-api/**/*.csproj', 'apps/web-api/**/*.sln') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-webapi-
+
+      - name: Restore Web API solution
+        working-directory: apps/web-api
+        run: dotnet restore MoviesAPI.sln
+
+      - name: Build Web API solution
+        working-directory: apps/web-api
+        run: dotnet build MoviesAPI.sln --configuration Release --no-restore
+
+      - name: Test Web API solution
+        working-directory: apps/web-api
+        run: dotnet test MoviesAPI.sln --configuration Release --no-build --verbosity normal
