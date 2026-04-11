@@ -1,125 +1,77 @@
 using Microsoft.AspNetCore.Mvc;
-using Moq;
-using System.Collections.Generic;
-using System.Linq;
-using Xunit;
-using MovieCollectionApi.Controllers;
-using MovieCollectionApi.Models;
+using MovieCollectionApi;
 
-namespace MovieCollectionApi.Tests.Controllers
+namespace MovieCollectionApi.Tests.Controllers;
+
+public class MovieControllerTests
 {
-    public class MovieControllerTest
+    private readonly MovieController _controller = new();
+
+    [Fact]
+    public void GetAll_ReturnsOkResult_WithListOfMovies()
     {
-        private readonly Mock<IList<Movie>> _mockMovies;
-        private readonly MovieController _controller;
+        var result = _controller.GetAll();
 
-        public MovieControllerTest()
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var movies = Assert.IsAssignableFrom<IEnumerable<Movie>>(okResult.Value);
+
+        Assert.NotEmpty(movies);
+    }
+
+    [Fact]
+    public void GetById_ExistingId_ReturnsOkResult_WithMovie()
+    {
+        var result = _controller.GetById(1);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var movie = Assert.IsType<Movie>(okResult.Value);
+
+        Assert.Equal(1, movie.Id);
+    }
+
+    [Fact]
+    public void GetById_NonExistingId_ReturnsNotFound()
+    {
+        var result = _controller.GetById(int.MaxValue);
+
+        Assert.IsType<NotFoundResult>(result.Result);
+    }
+
+    [Fact]
+    public void CreateUpdateAndDelete_Flow_Works()
+    {
+        var createdResult = _controller.Create(new Movie
         {
-            // Mock the in-memory movie list
-            _mockMovies = new Mock<IList<Movie>>();
-            _mockMovies.Setup(m => m.GetEnumerator()).Returns(new List<Movie>
+            Title = "Track B Validation",
+            FilmGenre = "Drama",
+            ReleaseYear = 2026,
+        });
+
+        var createdAtAction = Assert.IsType<CreatedAtActionResult>(createdResult.Result);
+        var createdMovie = Assert.IsType<Movie>(createdAtAction.Value);
+
+        var updateResult = _controller.Update(
+            createdMovie.Id,
+            new Movie
             {
-                new Movie { Id = 1, Title = "Inception", FilmGenre = "Sci-Fi", ReleaseYear = 2010 },
-                new Movie { Id = 2, Title = "The Godfather", FilmGenre = "Crime", ReleaseYear = 1972 }
-            }.GetEnumerator());
+                Title = "Track B Validation Updated",
+                FilmGenre = "Drama",
+                ReleaseYear = 2027,
+            }
+        );
 
-            // Initialize the controller with the mocked list
-            _controller = new MovieController(_mockMovies.Object);
-        }
+        Assert.IsType<NoContentResult>(updateResult);
 
-        [Fact]
-        public void GetAll_ReturnsOkResult_WithListOfMovies()
-        {
-            // Act
-            var result = _controller.GetAll();
+        var getUpdatedResult = _controller.GetById(createdMovie.Id);
+        var updatedOkResult = Assert.IsType<OkObjectResult>(getUpdatedResult.Result);
+        var updatedMovie = Assert.IsType<Movie>(updatedOkResult.Value);
 
-            // Assert
-            var okResult = Assert.IsType<OkObjectResult>(result.Result);
-            var movies = Assert.IsAssignableFrom<IEnumerable<Movie>>(okResult.Value);
-            Assert.NotEmpty(movies);
-        }
+        Assert.Equal("Track B Validation Updated", updatedMovie.Title);
+        Assert.Equal(2027, updatedMovie.ReleaseYear);
 
-        [Fact]
-        public void GetById_ExistingId_ReturnsOkResult_WithMovie()
-        {
-            // Act
-            var result = _controller.GetById(1);
+        var deleteResult = _controller.Delete(createdMovie.Id);
 
-            // Assert
-            var okResult = Assert.IsType<OkObjectResult>(result.Result);
-            var movie = Assert.IsType<Movie>(okResult.Value);
-            Assert.Equal(1, movie.Id);
-        }
-
-        [Fact]
-        public void GetById_NonExistingId_ReturnsNotFound()
-        {
-            // Act
-            var result = _controller.GetById(999);
-
-            // Assert
-            Assert.IsType<NotFoundResult>(result.Result);
-        }
-
-        [Fact]
-        public void Create_ValidMovie_ReturnsCreatedAtAction()
-        {
-            // Arrange
-            var newMovie = new Movie { Title = "Interstellar", FilmGenre = "Sci-Fi", ReleaseYear = 2014 };
-
-            // Act
-            var result = _controller.Create(newMovie);
-
-            // Assert
-            var createdAtAction = Assert.IsType<CreatedAtActionResult>(result.Result);
-            var movie = Assert.IsType<Movie>(createdAtAction.Value);
-            Assert.Equal("Interstellar", movie.Title);
-        }
-
-        [Fact]
-        public void Update_ExistingId_ReturnsNoContent()
-        {
-            // Arrange
-            var updatedMovie = new Movie { Title = "Updated", FilmGenre = "Drama", ReleaseYear = 2020 };
-
-            // Act
-            var result = _controller.Update(1, updatedMovie);
-
-            // Assert
-            Assert.IsType<NoContentResult>(result);
-        }
-
-        [Fact]
-        public void Update_NonExistingId_ReturnsNotFound()
-        {
-            // Arrange
-            var updatedMovie = new Movie { Title = "Updated", FilmGenre = "Drama", ReleaseYear = 2020 };
-
-            // Act
-            var result = _controller.Update(999, updatedMovie);
-
-            // Assert
-            Assert.IsType<NotFoundResult>(result);
-        }
-
-        [Fact]
-        public void Delete_ExistingId_ReturnsNoContent()
-        {
-            // Act
-            var result = _controller.Delete(1);
-
-            // Assert
-            Assert.IsType<NoContentResult>(result);
-        }
-
-        [Fact]
-        public void Delete_NonExistingId_ReturnsNotFound()
-        {
-            // Act
-            var result = _controller.Delete(999);
-
-            // Assert
-            Assert.IsType<NotFoundResult>(result);
-        }
+        Assert.IsType<NoContentResult>(deleteResult);
+        Assert.IsType<NotFoundResult>(_controller.GetById(createdMovie.Id).Result);
     }
 }
