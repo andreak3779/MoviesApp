@@ -3,15 +3,15 @@
 This project includes a Mockoon environment to mock backend API calls for development and testing.
 
 Where to find the environment
-- `movies-app/mockoon/movie-api.json` — ready-to-import Mockoon environment (example `/movies` endpoints).
-- `movies-app/mockoon/README.md` — quick run notes.
+- `apps/angular-client/mockoon/movie-api.json` — ready-to-import Mockoon environment (example `/movies` endpoints).
+- `apps/angular-client/mockoon/README.md` — quick run notes.
 
 Run options
 - Official CLI (when available):
   - Install (optional global): `npm i -g @mockoon/cli` or add `@mockoon/cli` as a devDependency.
-  - Start: `mockoon-cli start --data movies-app/mockoon/movie-api.json --port 3001`
+  - Start: `mockoon-cli start --data apps/angular-client/mockoon/movie-api.json --port 3001`
 - Local Node fallback (included):
-  - Run lightweight mock server: `node movies-app/scripts/mock-server.js`
+  - Run lightweight mock server: `node apps/angular-client/scripts/mock-server.js`
   - The Node server reads the Mockoon JSON and serves the example endpoints on port `3001`.
 
 How to use in development
@@ -28,8 +28,8 @@ Testing tips
 - When using the Node fallback, make sure tests start/stop the mock process to avoid port conflicts.
 
 Notes
-- The repo includes `movies-app/scripts/mock-server.js` as a simple fallback so contributors can run mocks without installing Mockoon CLI.
-- If you prefer the official Mockoon tooling, install `@mockoon/cli` and update `movies-app/package.json` scripts accordingly.
+- The repo includes `apps/angular-client/scripts/mock-server.js` as a simple fallback so contributors can run mocks without installing Mockoon CLI.
+- If you prefer the official Mockoon tooling, install `@mockoon/cli` and update `apps/angular-client/package.json` scripts accordingly.
 
 If you want, I can:
 - Add more example routes (search, filter, authentication), or
