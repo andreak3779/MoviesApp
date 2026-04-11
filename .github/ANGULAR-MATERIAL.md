@@ -1,13 +1,13 @@
 # Angular Material Guidelines for Agents
 
-This file describes repository-specific patterns and recommendations for using Angular Material in `movies-app`.
+This file describes repository-specific patterns and recommendations for using Angular Material in `apps/angular-client`.
 
 Why this matters
 - Angular Material provides accessible, themed UI components. Use it consistently to keep the UI cohesive and maintainable.
 
 Where to look
-- Dependency: `movies-app/package.json` includes `@angular/material`.
-- Global styles and theme: `movies-app/src/styles.scss` and `movies-app/angular.json` (styles array).
+- Dependency: `apps/angular-client/package.json` includes `@angular/material`.
+- Global styles and theme: `apps/angular-client/src/styles.scss` and `apps/angular-client/angular.json` (styles array).
 
 Recommended practices
 - Import only the Material modules you need in each feature module. Do NOT create a grab-bag `MaterialModule` that imports/exports the entire library — this prevents tree-shaking.
@@ -27,7 +27,7 @@ export class MoviesMaterialModule {}
 ```
 
 Theming (SCSS)
-- Use the Angular Material theming API in `movies-app/src/styles.scss` to create a single app theme, then include it globally.
+- Use the Angular Material theming API in `apps/angular-client/src/styles.scss` to create a single app theme, then include it globally.
 
 Minimal theme example (SCSS):
 
@@ -64,14 +64,14 @@ Testing
 
 Style & patterns
 - Keep Material styling in component SCSS files or the global theme; avoid inline styles that break theme tokens.
-- Follow the project's Prettier settings in `movies-app/package.json` for formatting.
+- Follow the project's Prettier settings in `apps/angular-client/package.json` for formatting.
 
 Where to add new components
-- Add components under `movies-app/src/app/` and prefer `--style=scss` when generating via schematics.
+- Add components under `apps/angular-client/src/app/` and prefer `--style=scss` when generating via schematics.
 
 When to avoid Material
 - For ultra-lightweight micro-widgets where shipping <1KB matters, consider minimal custom components instead of importing a Material module.
 
 If you want, I can:
-- Add a starter `MoviesMaterialModule` file under `movies-app/src/app/material/` with the commonly used imports, or
-- Add the SCSS theme snippet into `movies-app/src/styles.scss` and wire it in `angular.json`.
+- Add a starter `MoviesMaterialModule` file under `apps/angular-client/src/app/material/` with the commonly used imports, or
+- Add the SCSS theme snippet into `apps/angular-client/src/styles.scss` and wire it in `angular.json`.

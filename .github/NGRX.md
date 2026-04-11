@@ -1,7 +1,7 @@
 # NgRx Guidelines for Agents
 
 ## Presence
-- The project includes `@ngrx/store` and `@ngrx/store-devtools` (see `movies-app/package.json`). Follow existing slices and naming conventions if you modify global state.
+- The project includes `@ngrx/store` and `@ngrx/store-devtools` (see `apps/angular-client/package.json`). Follow existing slices and naming conventions if you modify global state.
 
 ## Patterns
 - Use `createAction`, `createReducer`, `createSelector` and keep reducer logic pure.

@@ -1,10 +1,10 @@
 # RxJS Guidelines for Agents
 
 ## Version
-- This project uses `rxjs` ~7.8.0 (see `movies-app/package.json`).
+- This project uses `rxjs` ~7.8.0 (see `apps/angular-client/package.json`).
 
 ## Recommended Patterns
-- Services should expose cold `Observable` streams rather than resolving/promising values. See `movies-app/src/app/services/movie-service.ts` for examples.
+- Services should expose cold `Observable` streams rather than resolving/promising values. See `apps/angular-client/src/app/services/movie-service.ts` for examples.
 - Prefer pipeable operators and functional composition (`pipe(map(...), catchError(...))`).
 - Avoid direct `subscribe()` calls in services; transform streams and let components subscribe or use the `async` pipe.
 

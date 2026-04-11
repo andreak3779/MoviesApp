@@ -11,7 +11,7 @@ This is a code sample I am creating to demostrate my skills with Angular.
 
 The project is organized as follows:
 
-- **movies-app/**: Contains the Angular application source code.
+- **apps/angular-client/**: Contains the Angular application source code.
   - `src/`: Application source files.
   - `public/`: Static assets.
   - `.vscode/`: Visual Studio Code workspace configuration files.
@@ -34,7 +34,7 @@ Ensure you have the following installed:
 
 To start a local development server, run:
 
-- **movies-app/**: Contains the Angular application source code.
+- **apps/angular-client/**: Contains the Angular application source code.
   - `src/`: Application source files.
   - `public/`: Static assets.
   - `.vscode/`: Visual Studio Code workspace configuration files.
@@ -67,7 +67,7 @@ ng generate --help
 To build the project run:
 
    ```bash
-   cd MoviesApp/movies-app
+   cd MoviesApp/apps/angular-client
    ```
 
 To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
@@ -100,7 +100,7 @@ Install dependencies for development (run from the repo root):
 
 ```bash
 # install deps for the Angular app
-cd movies-app
+cd apps/angular-client
 npm install
 # or, if you prefer a clean install using the lockfile when it is in sync:
 # npm ci
@@ -108,21 +108,21 @@ npm install
 
 Notes:
 - If `npm ci` fails with a lockfile mismatch, run `npm install` to update the lockfile, then commit the updated lockfile if appropriate.
-- Many commands in this README assume you are in the `movies-app/` directory.
+- Many commands in this README assume you are in the `apps/angular-client/` directory.
 
 ## Overview — recent changes
 
-- Repository now targets the consolidated application name `movies-app` (client + optional SSR).
-- A small mock API is included under `movies-app/mockoon/` with a Node fallback at `movies-app/scripts/mock-server.js` for local development.
+- Repository now targets the Angular client under `apps/angular-client` (client + optional SSR).
+- A small mock API is included under `apps/angular-client/mockoon/` with a Node fallback at `apps/angular-client/scripts/mock-server.js` for local development.
 
 ## Architecture (high level)
 
 The application is a single Angular app with optional server-side rendering (SSR) powered by Express.
 
-- Client entry: `movies-app/src/main.ts`
-- Server entry: `movies-app/src/main.server.ts` and `movies-app/server.ts`
-- Routes are split for client/server: `movies-app/src/app/app.routes.ts` and `movies-app/src/app/app.routes.server.ts`
-- Domain models: `movies-app/src/app/models/`
+- Client entry: `apps/angular-client/src/main.ts`
+- Server entry: `apps/angular-client/src/main.server.ts` and `apps/angular-client/server.ts`
+- Routes are split for client/server: `apps/angular-client/src/app/app.routes.ts` and `apps/angular-client/src/app/app.routes.server.ts`
+- Domain models: `apps/angular-client/src/app/models/`
 
 Simple architecture diagram (conceptual):
 
@@ -138,10 +138,10 @@ For a full diagram see `docs/moviesapp-diagram.mmd`.
 
 ## Main flows & code snippets
 
-Example: service method that fetches all movies and returns an Observable (pattern used in `movies-app/src/app/services/movie-service.ts`):
+Example: service method that fetches all movies and returns an Observable (pattern used in `apps/angular-client/src/app/services/movie-service.ts`):
 
 ```ts
-// movies-app/src/app/services/movie-service.ts (excerpt)
+// apps/angular-client/src/app/services/movie-service.ts (excerpt)
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
@@ -161,21 +161,21 @@ export class MovieService {
 Example: using the service in a component with the `async` pipe:
 
 ```html
-<!-- movies-app/src/app/app.html (excerpt) -->
+<!-- apps/angular-client/src/app/app.html (excerpt) -->
 <ul>
 	<li *ngFor="let movie of movies$ | async">{{ movie.title }}</li>
 </ul>
 ```
 
 ```ts
-// movies-app/src/app/app.ts (excerpt)
+// apps/angular-client/src/app/app.ts (excerpt)
 movies$ = this.movieService.getAllMovies();
 ```
 
 ## Mock API
 
-- Included environment: `movies-app/mockoon/movie-api.json` (importable into Mockoon GUI).
-- Node fallback server: `movies-app/scripts/mock-server.js` (run with `node movies-app/scripts/mock-server.js`).
+- Included environment: `apps/angular-client/mockoon/movie-api.json` (importable into Mockoon GUI).
+- Node fallback server: `apps/angular-client/scripts/mock-server.js` (run with `node apps/angular-client/scripts/mock-server.js`).
 - NPM script (when using Mockoon CLI): `npm run mock-api` (starts mock on port 3001).
 
 ## Developer checklist
@@ -184,7 +184,7 @@ movies$ = this.movieService.getAllMovies();
 
 ```bash
 git clone <repo-url>
-cd movies-app
+cd apps/angular-client
 npm ci
 ```
 
@@ -213,16 +213,16 @@ npm test
 - Before creating a PR:
 	- Run `npm test` and fix failing tests.
 	- Keep changes small and focused; update or add unit tests for behavior changes.
-	- Format code per Prettier settings in `movies-app/package.json`.
+	- Format code per Prettier settings in `apps/angular-client/package.json`.
 	- Do not commit secrets; use environment variables for credentials.
 
 ## Useful links
 
-- App entry: `movies-app/src/main.ts`
-- Server: `movies-app/server.ts`, `movies-app/src/main.server.ts`
-- Movie model: `movies-app/src/app/models/movie.ts`
-- Movie service: `movies-app/src/app/services/movie-service.ts`
-- Mockoon env: `movies-app/mockoon/movie-api.json`
+- App entry: `apps/angular-client/src/main.ts`
+- Server: `apps/angular-client/server.ts`, `apps/angular-client/src/main.server.ts`
+- Movie model: `apps/angular-client/src/app/models/movie.ts`
+- Movie service: `apps/angular-client/src/app/services/movie-service.ts`
+- Mockoon env: `apps/angular-client/mockoon/movie-api.json`
 - Agent guidance: `.github/copilot-instructions.md`, `.github/MOCKOON.md`
 
 If you'd like, I can generate a markdown-rendered architecture diagram file or add CI steps to start the mock server during tests.

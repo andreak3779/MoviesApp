@@ -17,7 +17,7 @@ graph LR
     Store[NgRx Store / Effects]
   end
 
-  Service[MovieService<br/>(movies-app/src/services/movie-service.ts)]
+  Service[MovieService<br/>(apps/angular-client/src/services/movie-service.ts)]
   WatchService[MovieWatchListService]
   Models[Models<br/>(Movie, MediaType, MovieFormat)]
   Server[SSR Server<br/>(src/server.ts, main.server.ts)]
