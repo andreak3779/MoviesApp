@@ -1,228 +1,120 @@
-# MoviesApp
+# MoviesApp Monorepo
 
-This repository contains the **MoviesApp**, a web application built with Angular.
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.1.1.
+MoviesApp is now organized as a single monorepo containing three applications:
 
-This is a code sample I am creating to demostrate my skills with Angular. 
+- Angular client
+- ASP.NET Core MVC web app
+- ASP.NET Core Web API
 
-### **It is a work in progress**
+This layout allows independent app development while keeping CI/CD, container orchestration, and contribution workflows centralized.
 
-## Project Structure
+## Repository Layout
 
-The project is organized as follows:
+- `apps/angular-client`: Angular 21 client (with optional SSR)
+- `apps/mvc-web`: ASP.NET Core MVC app
+- `apps/web-api`: ASP.NET Core Web API
+- `.github/workflows`: Root-owned CI/CD workflows
+- `docs`: Architecture, CI/CD, and contributor documentation
+- `docker-compose.yml`: Local full-stack container orchestration
 
-- **apps/angular-client/**: Contains the Angular application source code.
-  - `src/`: Application source files.
-  - `public/`: Static assets.
-  - `.vscode/`: Visual Studio Code workspace configuration files.
-  - `package.json`: Project dependencies and scripts.
-  - `angular.json`: Angular CLI configuration.
+## Prerequisites
 
-## Getting Started
+- Node.js 24.x (Angular app engines currently target 24.11.1)
+- npm
+- .NET SDK 10.x
+- Docker and Docker Compose (optional, for containerized local runs)
 
-### Prerequisites
+## Quickstart
 
-Ensure you have the following installed:
-
-- [Node.js](https://nodejs.org/) (v16 or higher)
-- [Angular CLI](https://angular.dev/tools/cli) (v21.1.1)
-
-### Setup
-
-1. Clone the repository:
-## Development server
-
-To start a local development server, run:
-
-- **apps/angular-client/**: Contains the Angular application source code.
-  - `src/`: Application source files.
-  - `public/`: Static assets.
-  - `.vscode/`: Visual Studio Code workspace configuration files.
-  - `package.json`: Project dependencies and scripts.
-  - `angular.json`: Angular CLI configuration.
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-   ```bash
-   git clone https://github.com/your-repo/MoviesApp.git
-   ```
-
-To build the project run:
-
-   ```bash
-   cd MoviesApp/apps/angular-client
-   ```
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
-
-## Setup
-
-Prerequisites:
-- Node.js (recommended LTS 18+)
-- npm (comes with Node)
-
-Install dependencies for development (run from the repo root):
-
-```bash
-# install deps for the Angular app
-cd apps/angular-client
-npm install
-# or, if you prefer a clean install using the lockfile when it is in sync:
-# npm ci
-```
-
-Notes:
-- If `npm ci` fails with a lockfile mismatch, run `npm install` to update the lockfile, then commit the updated lockfile if appropriate.
-- Many commands in this README assume you are in the `apps/angular-client/` directory.
-
-## Overview — recent changes
-
-- Repository now targets the Angular client under `apps/angular-client` (client + optional SSR).
-- A small mock API is included under `apps/angular-client/mockoon/` with a Node fallback at `apps/angular-client/scripts/mock-server.js` for local development.
-
-## Architecture (high level)
-
-The application is a single Angular app with optional server-side rendering (SSR) powered by Express.
-
-- Client entry: `apps/angular-client/src/main.ts`
-- Server entry: `apps/angular-client/src/main.server.ts` and `apps/angular-client/server.ts`
-- Routes are split for client/server: `apps/angular-client/src/app/app.routes.ts` and `apps/angular-client/src/app/app.routes.server.ts`
-- Domain models: `apps/angular-client/src/app/models/`
-
-Simple architecture diagram (conceptual):
-
-```mermaid
-flowchart LR
-	Browser-->Client[Angular App]
-	Client-->|API calls|MockAPI[(Mock API / Backend)]
-	Client-->|SSR request|Server[Express + Angular SSR]
-	Server-->|renders|Browser
-```
-
-For a full diagram see `docs/moviesapp-diagram.mmd`.
-
-## Main flows & code snippets
-
-Example: service method that fetches all movies and returns an Observable (pattern used in `apps/angular-client/src/app/services/movie-service.ts`):
-
-```ts
-// apps/angular-client/src/app/services/movie-service.ts (excerpt)
-import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { Movie } from '../models/movie';
-
-@Injectable({ providedIn: 'root' })
-export class MovieService {
-	private base = 'http://localhost:3001'; // dev mock API base
-	constructor(private http: HttpClient) {}
-
-	getAllMovies(): Observable<Movie[]> {
-		return this.http.get<Movie[]>(`${this.base}/movies`);
-	}
-}
-```
-
-Example: using the service in a component with the `async` pipe:
-
-```html
-<!-- apps/angular-client/src/app/app.html (excerpt) -->
-<ul>
-	<li *ngFor="let movie of movies$ | async">{{ movie.title }}</li>
-</ul>
-```
-
-```ts
-// apps/angular-client/src/app/app.ts (excerpt)
-movies$ = this.movieService.getAllMovies();
-```
-
-## Mock API
-
-- Included environment: `apps/angular-client/mockoon/movie-api.json` (importable into Mockoon GUI).
-- Node fallback server: `apps/angular-client/scripts/mock-server.js` (run with `node apps/angular-client/scripts/mock-server.js`).
-- NPM script (when using Mockoon CLI): `npm run mock-api` (starts mock on port 3001).
-
-## Developer checklist
-
-- Clone and install:
+### 1. Clone and enter the repository
 
 ```bash
 git clone <repo-url>
+cd MoviesApp
+```
+
+### 2. Angular client
+
+```bash
 cd apps/angular-client
 npm ci
-```
-
-- Start mock API (optional):
-
-```bash
-# Node fallback
-node scripts/mock-server.js
-
-# or, if using Mockoon CLI
-npm run mock-api
-```
-
-- Run dev server:
-
-```bash
 npm start
 ```
 
-- Run tests:
+Useful commands:
 
 ```bash
 npm test
+npm run build
+npm run serve:ssr:movies-app
 ```
 
-- Before creating a PR:
-	- Run `npm test` and fix failing tests.
-	- Keep changes small and focused; update or add unit tests for behavior changes.
-	- Format code per Prettier settings in `apps/angular-client/package.json`.
-	- Do not commit secrets; use environment variables for credentials.
+### 3. MVC app
 
-## Useful links
+```bash
+cd apps/mvc-web
+dotnet restore MoviesWeb.sln
+dotnet run --project MoviesWeb/MoviesWeb.csproj
+```
 
-- App entry: `apps/angular-client/src/main.ts`
-- Server: `apps/angular-client/server.ts`, `apps/angular-client/src/main.server.ts`
-- Movie model: `apps/angular-client/src/app/models/movie.ts`
-- Movie service: `apps/angular-client/src/app/services/movie-service.ts`
-- Mockoon env: `apps/angular-client/mockoon/movie-api.json`
-- Agent guidance: `.github/copilot-instructions.md`, `.github/MOCKOON.md`
+Useful commands:
 
-If you'd like, I can generate a markdown-rendered architecture diagram file or add CI steps to start the mock server during tests.
+```bash
+dotnet build MoviesWeb.sln --configuration Release
+dotnet test MoviesWeb.sln --configuration Release
+```
+
+### 4. Web API app
+
+```bash
+cd apps/web-api
+dotnet restore MoviesAPI.sln
+dotnet run --project MovieCollectionApi/MovieCollectionApi.csproj
+```
+
+Useful commands:
+
+```bash
+dotnet build MoviesAPI.sln --configuration Release
+dotnet test MoviesAPI.sln --configuration Release
+```
+
+## Run the Full Stack with Docker
+
+From the repository root:
+
+```bash
+docker compose up --build
+```
+
+Default exposed ports:
+
+- Angular client: 4000
+- MVC app: 8080
+- Web API: 8081
+
+You can override ports and API routing with environment variables in `.env`.
+Use `.env.example` as the baseline.
+
+## CI/CD
+
+Root-level workflows are the source of truth for automation:
+
+- `Validate Apps`: per-app validation with path-based change detection
+- `Container Images`: per-app Docker image build validation
+- `Release Images`: manual and tag-based image publishing to GHCR
+
+See `docs/CI-CD.md` for details, required checks, and release image naming.
+
+## Contributor Workflow
+
+Use the monorepo runbook for branch strategy, subtree imports, and gate checks:
+
+- `docs/CONTRIBUTING-RUNBOOK.md`
+
+## Related Documentation
+
+- `docs/ARCHITECTURE.md`
+- `docs/CI-CD.md`
+- `docs/moviesapp-diagram.mmd`
+- `AGENTS.md`
