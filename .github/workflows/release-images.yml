@@ -1,0 +1,163 @@
+name: Release Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Select which app images to publish.
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - angular-client
+          - mvc-web
+          - web-api
+      tag_suffix:
+        description: Optional extra tag suffix such as rc1.
+        required: false
+        type: string
+  push:
+    tags:
+      - 'release-*'
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: release-images-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish-angular-client:
+    name: publish-angular-client
+    runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch' || inputs.target == 'all' || inputs.target == 'angular-client'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute release tags
+        id: tags
+        shell: bash
+        run: |
+          image="ghcr.io/${{ github.repository_owner }}/moviesapp-angular-client"
+
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            base_tag="${GITHUB_REF_NAME#release-}"
+          elif [[ -n "${{ inputs.tag_suffix }}" ]]; then
+            base_tag="sha-${GITHUB_SHA::12}-${{ inputs.tag_suffix }}"
+          else
+            base_tag="sha-${GITHUB_SHA::12}"
+          fi
+
+          printf 'tags<<EOF\n%s:%s\n%s:sha-%s\nEOF\n' "$image" "$base_tag" "$image" "${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish Angular client image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/angular-client
+          file: apps/angular-client/Dockerfile
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          cache-from: type=gha,scope=angular-client
+          cache-to: type=gha,scope=angular-client,mode=max
+
+  publish-mvc-web:
+    name: publish-mvc-web
+    runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch' || inputs.target == 'all' || inputs.target == 'mvc-web'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute release tags
+        id: tags
+        shell: bash
+        run: |
+          image="ghcr.io/${{ github.repository_owner }}/moviesapp-mvc-web"
+
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            base_tag="${GITHUB_REF_NAME#release-}"
+          elif [[ -n "${{ inputs.tag_suffix }}" ]]; then
+            base_tag="sha-${GITHUB_SHA::12}-${{ inputs.tag_suffix }}"
+          else
+            base_tag="sha-${GITHUB_SHA::12}"
+          fi
+
+          printf 'tags<<EOF\n%s:%s\n%s:sha-%s\nEOF\n' "$image" "$base_tag" "$image" "${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish MVC image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/mvc-web
+          file: apps/mvc-web/Dockerfile
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          cache-from: type=gha,scope=mvc-web
+          cache-to: type=gha,scope=mvc-web,mode=max
+
+  publish-web-api:
+    name: publish-web-api
+    runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch' || inputs.target == 'all' || inputs.target == 'web-api'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute release tags
+        id: tags
+        shell: bash
+        run: |
+          image="ghcr.io/${{ github.repository_owner }}/moviesapp-web-api"
+
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            base_tag="${GITHUB_REF_NAME#release-}"
+          elif [[ -n "${{ inputs.tag_suffix }}" ]]; then
+            base_tag="sha-${GITHUB_SHA::12}-${{ inputs.tag_suffix }}"
+          else
+            base_tag="sha-${GITHUB_SHA::12}"
+          fi
+
+          printf 'tags<<EOF\n%s:%s\n%s:sha-%s\nEOF\n' "$image" "$base_tag" "$image" "${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish Web API image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/web-api
+          file: apps/web-api/Dockerfile
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          cache-from: type=gha,scope=web-api
+          cache-to: type=gha,scope=web-api,mode=max
