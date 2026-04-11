@@ -25,6 +25,8 @@ app.UseRouting();
 app.UseAuthorization();
 
 
+app.MapGet("/health", () => new { status = "ok" });
+
 app.MapStaticAssets();
 
 app.MapDefaultControllerRoute();

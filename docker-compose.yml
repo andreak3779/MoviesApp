@@ -1,0 +1,35 @@
+services:
+  angular-client:
+    build:
+      context: ./apps/angular-client
+      dockerfile: Dockerfile
+    environment:
+      PORT: 4000
+      NODE_ENV: production
+    ports:
+      - "${ANGULAR_CLIENT_PORT:-4000}:4000"
+
+  web-api:
+    build:
+      context: ./apps/web-api
+      dockerfile: Dockerfile
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_ENVIRONMENT: Production
+      EnableHttpsRedirection: "false"
+    ports:
+      - "${WEB_API_PORT:-8081}:8080"
+
+  mvc-web:
+    build:
+      context: ./apps/mvc-web
+      dockerfile: Dockerfile
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_ENVIRONMENT: Production
+      MoviesApi__BaseUrl: ${MOVIES_API_BASE_URL:-http://web-api:8080/api/}
+    ports:
+      - "${MVC_WEB_PORT:-8080}:8080"
+    depends_on:
+      web-api:
+        condition: service_healthy
