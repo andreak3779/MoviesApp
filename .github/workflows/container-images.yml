@@ -1,37 +1,14 @@
 name: Container Images
 
 on:
-  pull_request:
-    branches: [main, master]
-    paths:
-      - '.github/filters.yaml'
-      - '.github/workflows/container-images.yml'
-      - '.github/workflows/release-images.yml'
-      - 'docker-compose.yml'
-      - '.env.example'
-      - 'apps/angular-client/**'
-      - 'apps/mvc-web/**'
-      - 'apps/web-api/**'
-  push:
-    branches: [main, master]
-    paths:
-      - '.github/filters.yaml'
-      - '.github/workflows/container-images.yml'
-      - '.github/workflows/release-images.yml'
-      - 'docker-compose.yml'
-      - '.env.example'
-      - 'apps/angular-client/**'
-      - 'apps/mvc-web/**'
-      - 'apps/web-api/**'
   workflow_dispatch:
-  schedule:
-    - cron: '0 5 * * *'
+    
 
 permissions:
   contents: read
 
 concurrency:
-  group: container-images-${{ github.event.pull_request.number || github.ref }}
+  group: container-images-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
