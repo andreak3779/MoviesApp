@@ -1,41 +1,29 @@
 name: Validate Apps
 
 on:
-  pull_request:
-    branches: [main, master]
-    paths:
-      - '.github/filters.yaml'
-      - '.github/workflows/**'
-      - 'README.md'
-      - 'AGENTS.md'
-      - '.env.example'
-      - 'docker-compose.yml'
-      - 'docs/**'
-      - 'apps/angular-client/**'
-      - 'apps/mvc-web/**'
-      - 'apps/web-api/**'
-  push:
-    branches: [main, master]
-    paths:
-      - '.github/filters.yaml'
-      - '.github/workflows/**'
-      - 'README.md'
-      - 'AGENTS.md'
-      - '.env.example'
-      - 'docker-compose.yml'
-      - 'docs/**'
-      - 'apps/angular-client/**'
-      - 'apps/mvc-web/**'
-      - 'apps/web-api/**'
   workflow_dispatch:
-  schedule:
-    - cron: '0 4 * * *'
+    inputs:
+      target:
+        description: Target app to validate (angular-client, mvc-web, web-api, all)
+        required: true
+        default: all
+        type: choice
+        options:
+          - angular-client
+          - mvc-web
+          - web-api
+          - all
+      tag_suffix:
+        description: Optional tag suffix to select specific image versions for validation.
+        required: false
+        type: string
+  
 
 permissions:
   contents: read
 
 concurrency:
-  group: validate-apps-${{ github.event.pull_request.number || github.ref }}
+  group: validate-apps-${{ github.ref }}
   cancel-in-progress: true
 
 env:

@@ -17,9 +17,7 @@ on:
         description: Optional extra tag suffix such as rc1.
         required: false
         type: string
-  push:
-    tags:
-      - 'release-*'
+
 
 permissions:
   contents: read
