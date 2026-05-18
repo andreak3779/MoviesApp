@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MovieCollectionApi\MovieCollectionApi.csproj" />
+    <ProjectReference Include="..\MoviesApi\MoviesApi.csproj" />
   </ItemGroup>
 
 </Project>

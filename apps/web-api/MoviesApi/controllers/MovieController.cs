@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace MovieCollectionApi
+namespace MoviesApi
 {
     [ApiController]
     [Route("api/[controller]")]

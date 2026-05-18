@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using MovieCollectionApi;
+using MoviesApi;
 
-namespace MovieCollectionApi.Tests.Controllers;
+namespace MoviesApi.Tests.Controllers;
 
 public class MovieControllerTests
 {

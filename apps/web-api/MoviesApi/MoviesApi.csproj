@@ -4,8 +4,8 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>MovieCollectionApi</RootNamespace>
-    <AssemblyName>MovieCollectionApi</AssemblyName>
+    <RootNamespace>MoviesApi</RootNamespace>
+    <AssemblyName>MoviesApi</AssemblyName>
     <TargetFrameworks>net9.0;net8.0</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
