@@ -13,9 +13,9 @@ public class Movie
     public required string Title { get; set; }
     
     [Required]
-    [StringLength(100)]
-    public required string FilmGenre { get; set; }
-    
-    [Required]
     public int ReleaseYear { get; set; }
+    
+    // Navigation properties for many-to-many relationships
+    public ICollection<MovieMediaType> MovieMediaTypes { get; set; } = new List<MovieMediaType>();
+    public ICollection<MovieFilmGenre> MovieFilmGenres { get; set; } = new List<MovieFilmGenre>();
 }

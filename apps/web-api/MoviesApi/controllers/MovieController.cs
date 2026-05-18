@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using MoviesApi.Models;
 using MoviesApi.Repositories;
+using MoviesApi.DTOs;
 
 namespace MoviesApi
 {
@@ -19,33 +20,69 @@ namespace MoviesApi
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Movie>>> GetAll()
+        public async Task<ActionResult<IEnumerable<MovieResponseDto>>> GetAll()
         {
             var movies = await _repository.GetAllAsync();
-            return Ok(movies);
+            var response = movies.Select(MapToResponseDto);
+            return Ok(response);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Movie>> GetById(int id)
+        public async Task<ActionResult<MovieResponseDto>> GetById(int id)
         {
             var movie = await _repository.GetByIdAsync(id);
             if (movie == null)
                 return NotFound();
-            return Ok(movie);
+            return Ok(MapToResponseDto(movie));
         }
 
         [HttpPost]
-        public async Task<ActionResult<Movie>> Create(Movie movie)
+        public async Task<ActionResult<MovieResponseDto>> Create([FromBody] MovieDto movieDto)
         {
+            var movie = new Movie
+            {
+                Title = movieDto.Title,
+                ReleaseYear = movieDto.ReleaseYear
+            };
+
+            // Add many-to-many relationships
+            foreach (var mediaTypeId in movieDto.MediaTypeIds)
+            {
+                movie.MovieMediaTypes.Add(new MovieMediaType { MediaTypeId = mediaTypeId });
+            }
+
+            foreach (var filmGenreId in movieDto.FilmGenreIds)
+            {
+                movie.MovieFilmGenres.Add(new MovieFilmGenre { FilmGenreId = filmGenreId });
+            }
+
             var createdMovie = await _repository.CreateAsync(movie);
-            return CreatedAtAction(nameof(GetById), new { id = createdMovie.Id }, createdMovie);
+            var response = MapToResponseDto(createdMovie);
+            return CreatedAtAction(nameof(GetById), new { id = response.Id }, response);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, Movie updatedMovie)
+        public async Task<IActionResult> Update(int id, [FromBody] MovieDto movieDto)
         {
-            var movie = await _repository.UpdateAsync(id, updatedMovie);
-            if (movie == null)
+            var movie = new Movie
+            {
+                Title = movieDto.Title,
+                ReleaseYear = movieDto.ReleaseYear
+            };
+
+            // Add many-to-many relationships
+            foreach (var mediaTypeId in movieDto.MediaTypeIds)
+            {
+                movie.MovieMediaTypes.Add(new MovieMediaType { MediaTypeId = mediaTypeId });
+            }
+
+            foreach (var filmGenreId in movieDto.FilmGenreIds)
+            {
+                movie.MovieFilmGenres.Add(new MovieFilmGenre { FilmGenreId = filmGenreId });
+            }
+
+            var updatedMovie = await _repository.UpdateAsync(id, movie);
+            if (updatedMovie == null)
                 return NotFound();
 
             return NoContent();
@@ -59,6 +96,30 @@ namespace MoviesApi
                 return NotFound();
 
             return NoContent();
+        }
+
+        private static MovieResponseDto MapToResponseDto(Movie movie)
+        {
+            return new MovieResponseDto
+            {
+                Id = movie.Id,
+                Title = movie.Title,
+                ReleaseYear = movie.ReleaseYear,
+                MediaTypes = movie.MovieMediaTypes
+                    .Select(mm => new MediaTypeDto
+                    {
+                        Id = mm.MediaType.Id,
+                        Name = mm.MediaType.Name,
+                        Description = mm.MediaType.Description
+                    }).ToList(),
+                FilmGenres = movie.MovieFilmGenres
+                    .Select(mf => new FilmGenreDto
+                    {
+                        Id = mf.FilmGenre.Id,
+                        Name = mf.FilmGenre.Name,
+                        Description = mf.FilmGenre.Description
+                    }).ToList()
+            };
         }
     }
 }

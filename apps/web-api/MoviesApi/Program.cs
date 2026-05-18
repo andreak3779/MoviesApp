@@ -15,8 +15,10 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<MoviesDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Add repository
+// Add repositories
 builder.Services.AddScoped<IMovieRepository, MovieRepository>();
+builder.Services.AddScoped<IMediaTypeRepository, MediaTypeRepository>();
+builder.Services.AddScoped<IFilmGenreRepository, FilmGenreRepository>();
 
 var app = builder.Build();
 
