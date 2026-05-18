@@ -21,7 +21,7 @@ This layout allows independent app development while keeping CI/CD, container or
 
 - Node.js 24.x (Angular app engines currently target 24.11.1)
 - npm
-- .NET SDK 10.x
+- .NET SDK 10.x (.NET 10.0.107 or later) ✅ **Updated to .NET 10**
 - Docker and Docker Compose (optional, for containerized local runs)
 
 ## Quickstart
