@@ -1,5 +1,8 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using MoviesApi.Data;
+using MoviesApi.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,7 +11,21 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Add DbContext with SQLite
+builder.Services.AddDbContext<MoviesDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Add repository
+builder.Services.AddScoped<IMovieRepository, MovieRepository>();
+
 var app = builder.Build();
+
+// Ensure database is created and migrated
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<MoviesDbContext>();
+    dbContext.Database.EnsureCreated();
+}
 
 var enableHttpsRedirection = app.Configuration.GetValue("EnableHttpsRedirection", true);
 
