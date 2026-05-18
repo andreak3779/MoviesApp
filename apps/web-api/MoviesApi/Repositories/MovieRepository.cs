@@ -33,7 +33,7 @@ public class MovieRepository : IMovieRepository
             .FirstOrDefaultAsync(m => m.Id == id);
     }
 
-    public async Task<Movie> CreateAsync(Movie movie)
+    public async Task<Movie?> CreateAsync(Movie movie)
     {
         _context.Movies.Add(movie);
         await _context.SaveChangesAsync();

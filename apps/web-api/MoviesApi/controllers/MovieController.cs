@@ -57,6 +57,10 @@ namespace MoviesApi
             }
 
             var createdMovie = await _repository.CreateAsync(movie);
+            if (createdMovie == null)
+            {
+                return BadRequest("Failed to create movie");
+            }
             var response = MapToResponseDto(createdMovie);
             return CreatedAtAction(nameof(GetById), new { id = response.Id }, response);
         }
