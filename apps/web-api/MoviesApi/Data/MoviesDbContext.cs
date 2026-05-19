@@ -1,9 +1,10 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using MoviesApi.Models;
 
 namespace MoviesApi.Data;
 
-public class MoviesDbContext : DbContext
+public class MoviesDbContext : IdentityDbContext<ApplicationUser>
 {
     public MoviesDbContext(DbContextOptions<MoviesDbContext> options)
         : base(options)
@@ -15,6 +16,8 @@ public class MoviesDbContext : DbContext
     public DbSet<FilmGenre> FilmGenres { get; set; } = null!;
     public DbSet<MovieMediaType> MovieMediaTypes { get; set; } = null!;
     public DbSet<MovieFilmGenre> MovieFilmGenres { get; set; } = null!;
+    public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
+    public DbSet<AuditLog> AuditLogs { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -126,5 +129,16 @@ public class MoviesDbContext : DbContext
             new FilmGenre { Id = 12, Name = "Fantasy", Description = "Magical and supernatural elements" },
             new FilmGenre { Id = 13, Name = "Crime", Description = "Criminal activities and investigations" }
         );
+
+        // AuditLog configuration
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.ToTable("AuditLogs");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Timestamp).IsRequired();
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.Timestamp);
+            entity.HasIndex(e => e.Action);
+        });
     }
 }

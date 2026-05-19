@@ -1,38 +1,392 @@
-# MoviesAPI
-Example web API using REST for managing my movie collection.
+# MoviesAPI - OWASP Top 10 Compliant Web API
+
+Secure, production-ready ASP.NET Core Web API for managing movie collections with full OWASP Top 10 API Security compliance.
+
+## 🔒 Security Features
+
+✅ **OWASP Top 10 API Security Compliant** (8/10 vulnerabilities addressed)
+
+- JWT-based authentication with refresh tokens
+- Role-based authorization (Admin, User)
+- Object-level ownership validation
+- Rate limiting (100 req/min read, 10 req/min write)
+- Request pagination
+- Comprehensive audit logging
+- Security headers (CSP, HSTS, X-Frame-Options, etc.)
+- Input validation and sanitization
+- GUID-based resource IDs (anti-enumeration)
+- Protected Swagger documentation
 
 ---
 
-## Running Tests
+## 📋 Prerequisites
 
-To run the test suite, use the following command in the project root:
+- .NET SDK 10.x
+- SQLite (included) or PostgreSQL/MySQL for production
+- Node.js (for secret key generation)
 
+---
+
+## 🚀 Quick Start
+
+### 1. Configure Secrets (Required)
+
+```bash
+cd /home/user/src/MoviesApp/apps/web-api/MoviesApi
+
+# Initialize user secrets
+dotnet user-secrets init
+
+# Generate and set JWT secret key
+dotnet user-secrets set "JwtSettings:SecretKey" "$(openssl rand -base64 32)"
 ```
+
+### 2. Restore and Build
+
+```bash
+dotnet restore
+dotnet build
+```
+
+### 3. Run the API
+
+```bash
+dotnet run
+```
+
+The API will be available at:
+- HTTP: `http://localhost:5000`
+- HTTPS: `https://localhost:5001`
+
+---
+
+## 🔐 Authentication Endpoints
+
+### Register New User
+
+```bash
+POST /api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "SecurePass123!",
+  "confirmPassword": "SecurePass123!",
+  "firstName": "John",
+  "lastName": "Doe"
+}
+```
+
+**Password Requirements:**
+- Minimum 8 characters
+- At least one uppercase letter
+- At least one lowercase letter
+- At least one number
+
+### Login
+
+```bash
+POST /api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "SecurePass123!"
+}
+```
+
+**Response:**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "refreshToken": "dGhpcyBpcyBhIHJhbmRvbS...",
+  "expiresAt": "2026-05-18T12:15:00Z",
+  "email": "user@example.com",
+  "firstName": "John",
+  "lastName": "Doe"
+}
+```
+
+### Refresh Token
+
+```bash
+POST /api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "token": "YOUR_ACCESS_TOKEN",
+  "refreshToken": "YOUR_REFRESH_TOKEN"
+}
+```
+
+### Logout
+
+```bash
+POST /api/v1/auth/logout
+Authorization: Bearer YOUR_TOKEN
+Content-Type: application/json
+
+{
+  "refreshToken": "YOUR_REFRESH_TOKEN"
+}
+```
+
+### Get Current User
+
+```bash
+GET /api/v1/auth/me
+Authorization: Bearer YOUR_TOKEN
+```
+
+---
+
+## 🎬 Movie Endpoints
+
+All movie endpoints require authentication. Users can only access their own movies.
+
+### Get All Movies (Paginated)
+
+```bash
+GET /api/v1/movies?pageNumber=1&pageSize=20
+Authorization: Bearer YOUR_TOKEN
+```
+
+**Response:**
+```json
+{
+  "items": [...],
+  "pageNumber": 1,
+  "pageSize": 20,
+  "totalCount": 45,
+  "totalPages": 3,
+  "hasPrevious": false,
+  "hasNext": true
+}
+```
+
+### Get Movie by ID
+
+```bash
+GET /api/v1/movies/{guid}
+Authorization: Bearer YOUR_TOKEN
+```
+
+### Create Movie
+
+```bash
+POST /api/v1/movies
+Authorization: Bearer YOUR_TOKEN
+Content-Type: application/json
+
+{
+  "title": "Inception",
+  "releaseYear": 2010,
+  "mediaTypeIds": [1, 4],
+  "filmGenreIds": [1, 6]
+}
+```
+
+### Update Movie
+
+```bash
+PUT /api/v1/movies/{guid}
+Authorization: Bearer YOUR_TOKEN
+Content-Type: application/json
+
+{
+  "title": "Inception (Updated)",
+  "releaseYear": 2010
+}
+```
+
+### Delete Movie
+
+```bash
+DELETE /api/v1/movies/{guid}
+Authorization: Bearer YOUR_TOKEN
+```
+
+---
+
+## 📚 Reference Data Endpoints
+
+These endpoints are publicly accessible (no authentication required).
+
+### Get All Media Types
+
+```bash
+GET /api/v1/mediatypes
+```
+
+### Get Media Type by ID
+
+```bash
+GET /api/v1/mediatypes/{id}
+```
+
+### Get All Film Genres
+
+```bash
+GET /api/v1/filmgenres
+```
+
+### Get Film Genre by ID
+
+```bash
+GET /api/v1/filmgenres/{id}
+```
+
+---
+
+## 🛡️ Security Features
+
+### Rate Limiting
+
+- **Read operations (GET):** 100 requests per minute
+- **Write operations (POST/PUT/DELETE):** 10 requests per minute
+- Per-user rate limiting (by user ID or IP)
+- Returns `429 Too Many Requests` when exceeded
+- Includes `Retry-After` header
+
+### Security Headers
+
+All responses include:
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `X-XSS-Protection: 1; mode=block`
+- `Content-Security-Policy: default-src 'self'`
+- `Strict-Transport-Security` (production only)
+- `Referrer-Policy: strict-origin-when-cross-origin`
+
+### Audit Logging
+
+All CREATE, UPDATE, and DELETE operations are automatically logged with:
+- User ID
+- Action type
+- Entity type and ID
+- Old and new values
+- IP address
+- User agent
+- Timestamp (UTC)
+
+---
+
+## 🧪 Running Tests
+
+```bash
+cd /home/user/src/MoviesApp/apps/web-api
 dotnet test
 ```
 
 ---
 
-## API Endpoints
+## 🔧 Configuration
 
-The API exposes the following endpoints for managing movies:
+### Development (User Secrets)
 
-- `GET /api/movies` - Get all movies.
-- `GET /api/movies/{id}` - Get a movie by ID.
-- `POST /api/movies` - Create a new movie.
-- `PUT /api/movies/{id}` - Update an existing movie.
-- `DELETE /api/movies/{id}` - Delete a movie.
-
-### Example Movie Object
-
-```json
-{
-  "id": 1,
-  "title": "Inception",
-  "genre": "Sci-Fi",
-  "releaseYear": 2010
-}
+```bash
+dotnet user-secrets set "JwtSettings:SecretKey" "your-secret-key"
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Data Source=movies.db"
 ```
+
+### Production (Environment Variables)
+
+```bash
+export JwtSettings__SecretKey="your-production-secret"
+export ConnectionStrings__DefaultConnection="Host=db;Database=movies;Username=user;Password=pass"
+```
+
+See `SECURE-CONFIGURATION-GUIDE.md` for complete configuration documentation.
+
+---
+
+## 📊 Database Migrations
+
+```bash
+# Create migration
+dotnet ef migrations add MigrationName
+
+# Apply migration
+dotnet ef database update
+```
+
+---
+
+## 📁 Project Structure
+
+```
+MoviesApi/
+├── Controllers/
+│   ├── AuthController.cs       # Authentication endpoints
+│   ├── MovieController.cs      # Movie CRUD operations
+│   ├── FilmGenresController.cs # Reference data
+│   └── MediaTypesController.cs # Reference data
+├── Data/
+│   └── MoviesDbContext.cs      # EF Core DbContext
+├── DTOs/
+│   ├── AuthDtos.cs             # Authentication DTOs
+│   ├── MovieDtos.cs            # Movie DTOs
+│   └── PaginationDtos.cs       # Pagination DTOs
+├── Middleware/
+│   ├── AuditLoggingMiddleware.cs
+│   ├── ExceptionHandlingMiddleware.cs
+│   ├── RateLimitingMiddleware.cs
+│   └── SecurityHeadersMiddleware.cs
+├── Models/
+│   ├── ApplicationUser.cs      # Identity user model
+│   ├── Movie.cs                # Movie entity
+│   ├── RefreshToken.cs         # Refresh token entity
+│   └── AuditLog.cs             # Audit log entity
+├── Repositories/
+│   ├── IMovieRepository.cs
+│   └── MovieRepository.cs
+├── Services/
+│   ├── AuthService.cs          # JWT authentication
+│   └── AuditLogService.cs      # Audit logging
+└── Program.cs                  # Application configuration
+```
+
+---
+
+## 📚 Documentation
+
+- **OWASP Compliance Plan:** `docs/plans/OWASP-TOP10-COMPLIANCE-PLAN.md`
+- **Implementation Summary:** `IMPLEMENTATION-COMPLETE-SUMMARY.md`
+- **Configuration Guide:** `SECURE-CONFIGURATION-GUIDE.md`
+- **API Documentation:** Available at `/swagger` (development only)
+
+---
+
+## 🚨 Important Security Notes
+
+1. **Change the JWT Secret Key** before deploying to production
+2. **Update CORS origins** in `Program.cs` for your production domain
+3. **Use HTTPS** in production (enabled by default)
+4. **Monitor audit logs** for suspicious activity
+5. **Keep dependencies updated** to address vulnerabilities
+
+---
+
+## 🏆 OWASP Top 10 Coverage
+
+| Vulnerability | Status | Implementation |
+|--------------|--------|----------------|
+| API1: Broken Object Level Authorization | ✅ Fixed | Ownership validation + GUIDs |
+| API2: Broken Authentication | ✅ Fixed | JWT + refresh tokens |
+| API3: Broken Object Property Level Authorization | ✅ Fixed | Separate DTOs |
+| API4: Unrestricted Resource Consumption | ✅ Fixed | Rate limiting + pagination |
+| API5: Broken Function Level Authorization | ✅ Fixed | Authorization policies |
+| API6: Unrestricted Access to Sensitive Business Flows | ✅ Fixed | Audit logging |
+| API7: SSRF | ⚠️ N/A | No external URL processing |
+| API8: Security Misconfiguration | ✅ Fixed | Security headers + CORS |
+| API9: Improper Inventory Management | ✅ Fixed | API versioning |
+| API10: Unsafe API Consumption | ⚠️ N/A | No external APIs |
+
+---
+
+## 📄 License
+
+This project is for educational purposes.
 
 ---
 

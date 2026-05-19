@@ -1,11 +1,13 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoviesApi.Models;
 using MoviesApi.Repositories;
 
 namespace MoviesApi.Controllers;
 
+[Authorize]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/[controller]")]
 public class MediaTypesController : ControllerBase
 {
     private readonly IMediaTypeRepository _repository;
@@ -16,6 +18,7 @@ public class MediaTypesController : ControllerBase
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<MediaType>>> GetAll()
     {
         var mediaTypes = await _repository.GetAllAsync();
@@ -23,6 +26,7 @@ public class MediaTypesController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [AllowAnonymous]
     public async Task<ActionResult<MediaType>> GetById(int id)
     {
         var mediaType = await _repository.GetByIdAsync(id);

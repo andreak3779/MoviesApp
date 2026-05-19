@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics.CodeAnalysis;
 
 namespace MoviesApi.Models;
@@ -6,7 +7,7 @@ namespace MoviesApi.Models;
 public class Movie
 {
     [Key]
-    public int Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
     
     [Required]
     [StringLength(200)]
@@ -14,6 +15,15 @@ public class Movie
     
     [Required]
     public int ReleaseYear { get; set; }
+    
+    [Required]
+    public string OwnerId { get; set; } = string.Empty;
+    
+    [ForeignKey(nameof(OwnerId))]
+    public ApplicationUser? Owner { get; set; }
+    
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
     
     // Navigation properties for many-to-many relationships
     public ICollection<MovieMediaType> MovieMediaTypes { get; set; } = new List<MovieMediaType>();

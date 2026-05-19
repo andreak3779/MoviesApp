@@ -1,10 +1,10 @@
 # MoviesApp Monorepo
 
-MoviesApp is now organized as a single monorepo containing three applications:
+MoviesApp is a secure, production-ready movie collection management system organized as a single monorepo containing three applications:
 
-- Angular client
+- Angular client (with optional SSR)
 - ASP.NET Core MVC web app
-- ASP.NET Core Web API
+- **OWASP Top 10 Compliant** ASP.NET Core Web API
 
 This layout allows independent app development while keeping CI/CD, container orchestration, and contribution workflows centralized.
 
@@ -12,7 +12,7 @@ This layout allows independent app development while keeping CI/CD, container or
 
 - `apps/angular-client`: Angular 21 client (with optional SSR)
 - `apps/mvc-web`: ASP.NET Core MVC app
-- `apps/web-api`: ASP.NET Core Web API
+- `apps/web-api`: **OWASP Top 10 Compliant** ASP.NET Core Web API
 - `.github/workflows`: Root-owned CI/CD workflows
 - `docs`: Architecture, CI/CD, and contributor documentation
 - `docker-compose.yml`: Local full-stack container orchestration
@@ -64,12 +64,18 @@ dotnet build MoviesWeb.sln --configuration Release
 dotnet test MoviesWeb.sln --configuration Release
 ```
 
-### 4. Web API app
+### 4. Web API app (OWASP Top 10 Compliant)
 
 ```bash
-cd apps/web-api
-dotnet restore MoviesAPI.sln
-dotnet run --project MovieCollectionApi/MovieCollectionApi.csproj
+cd apps/web-api/MoviesApi
+
+# Initialize secrets (required)
+dotnet user-secrets init
+dotnet user-secrets set "JwtSettings:SecretKey" "$(openssl rand -base64 32)"
+
+# Restore and run
+dotnet restore
+dotnet run
 ```
 
 Useful commands:
@@ -78,6 +84,18 @@ Useful commands:
 dotnet build MoviesAPI.sln --configuration Release
 dotnet test MoviesAPI.sln --configuration Release
 ```
+
+**Security Features:**
+- JWT authentication with refresh tokens
+- Role-based authorization
+- Rate limiting (100 req/min read, 10 req/min write)
+- Request pagination
+- Comprehensive audit logging
+- Security headers (CSP, HSTS, etc.)
+- Input validation
+- GUID-based resource IDs
+
+See `apps/web-api/README.md` for complete API documentation.
 
 ## Run the Full Stack with Docker
 

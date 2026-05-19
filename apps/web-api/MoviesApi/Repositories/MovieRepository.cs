@@ -23,7 +23,38 @@ public class MovieRepository : IMovieRepository
             .ToListAsync();
     }
 
-    public async Task<Movie?> GetByIdAsync(int id)
+    public async Task<IEnumerable<Movie>> GetAllByUserAsync(string userId)
+    {
+        return await _context.Movies
+            .Where(m => m.OwnerId == userId)
+            .Include(m => m.MovieMediaTypes)
+                .ThenInclude(mm => mm.MediaType)
+            .Include(m => m.MovieFilmGenres)
+                .ThenInclude(mf => mf.FilmGenre)
+            .ToListAsync();
+    }
+
+    public async Task<(IEnumerable<Movie> Movies, int TotalCount)> GetPagedByUserAsync(string userId, int pageNumber, int pageSize)
+    {
+        var query = _context.Movies
+            .Where(m => m.OwnerId == userId)
+            .Include(m => m.MovieMediaTypes)
+                .ThenInclude(mm => mm.MediaType)
+            .Include(m => m.MovieFilmGenres)
+                .ThenInclude(mf => mf.FilmGenre)
+            .AsQueryable();
+
+        var totalCount = await query.CountAsync();
+        var movies = await query
+            .OrderByDescending(m => m.CreatedAt)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (movies, totalCount);
+    }
+
+    public async Task<Movie?> GetByIdAsync(Guid id)
     {
         return await _context.Movies
             .Include(m => m.MovieMediaTypes)
@@ -31,6 +62,22 @@ public class MovieRepository : IMovieRepository
             .Include(m => m.MovieFilmGenres)
                 .ThenInclude(mf => mf.FilmGenre)
             .FirstOrDefaultAsync(m => m.Id == id);
+    }
+
+    public async Task<Movie?> GetByIdWithOwnershipCheckAsync(Guid id, string userId)
+    {
+        var movie = await _context.Movies
+            .Include(m => m.MovieMediaTypes)
+                .ThenInclude(mm => mm.MediaType)
+            .Include(m => m.MovieFilmGenres)
+                .ThenInclude(mf => mf.FilmGenre)
+            .FirstOrDefaultAsync(m => m.Id == id);
+
+        // Return null if movie doesn't exist or user doesn't own it
+        if (movie == null || movie.OwnerId != userId)
+            return null;
+
+        return movie;
     }
 
     public async Task<Movie?> CreateAsync(Movie movie)
@@ -42,7 +89,7 @@ public class MovieRepository : IMovieRepository
         return await GetByIdAsync(movie.Id);
     }
 
-    public async Task<Movie?> UpdateAsync(int id, Movie movie)
+    public async Task<Movie?> UpdateAsync(Guid id, Movie movie)
     {
         var existingMovie = await _context.Movies
             .Include(m => m.MovieMediaTypes)
@@ -78,10 +125,21 @@ public class MovieRepository : IMovieRepository
         return await GetByIdAsync(existingMovie.Id);
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(Guid id)
     {
         var movie = await _context.Movies.FindAsync(id);
         if (movie == null)
+            return false;
+
+        _context.Movies.Remove(movie);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> DeleteWithOwnershipCheckAsync(Guid id, string userId)
+    {
+        var movie = await _context.Movies.FindAsync(id);
+        if (movie == null || movie.OwnerId != userId)
             return false;
 
         _context.Movies.Remove(movie);

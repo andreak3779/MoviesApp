@@ -1,11 +1,13 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoviesApi.Models;
 using MoviesApi.Repositories;
 
 namespace MoviesApi.Controllers;
 
+[Authorize]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/[controller]")]
 public class FilmGenresController : ControllerBase
 {
     private readonly IFilmGenreRepository _repository;
@@ -16,6 +18,7 @@ public class FilmGenresController : ControllerBase
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<FilmGenre>>> GetAll()
     {
         var filmGenres = await _repository.GetAllAsync();
@@ -23,6 +26,7 @@ public class FilmGenresController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [AllowAnonymous]
     public async Task<ActionResult<FilmGenre>> GetById(int id)
     {
         var filmGenre = await _repository.GetByIdAsync(id);

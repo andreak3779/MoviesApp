@@ -2,6 +2,41 @@
 
 This document contains the project's architecture diagram and instructions to render it.
 
+## Security Architecture
+
+The MoviesApp implements comprehensive security measures following OWASP Top 10 API Security guidelines:
+
+### Web API Security Stack
+
+- **Authentication:** JWT-based with refresh token rotation
+- **Authorization:** Role-based (Admin, User) with object-level ownership validation
+- **Rate Limiting:** 100 req/min (read), 10 req/min (write)
+- **Audit Logging:** All mutations logged with user context
+- **Security Headers:** CSP, HSTS, X-Frame-Options, etc.
+- **Input Validation:** DTOs with validation attributes
+- **Resource Protection:** GUID-based IDs to prevent enumeration
+
+### Authentication Flow
+
+```
+Client → POST /api/v1/auth/login → JWT Token + Refresh Token
+Client → API Request with Bearer Token → Validate → Process
+Client → Token Expired → Refresh Token → New JWT Token
+```
+
+### Authorization Layers
+
+1. **Authentication Layer:** All endpoints require valid JWT token
+2. **Policy Layer:** UserOnly/AdminOnly policies
+3. **Object Level:** Ownership validation (users can only access their own resources)
+4. **Property Level:** Separate DTOs for create/update operations
+
+See `apps/web-api/IMPLEMENTATION-COMPLETE-SUMMARY.md` for complete security documentation.
+
+---
+
+## Application Architecture
+
 Mermaid source (from `docs/moviesapp-diagram.mmd`):
 
 ```mermaid

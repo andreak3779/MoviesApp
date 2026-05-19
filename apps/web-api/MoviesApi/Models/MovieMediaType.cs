@@ -13,7 +13,7 @@ public class MovieMediaType
     
     [Required]
     [ForeignKey(nameof(Movie))]
-    public int MovieId { get; set; }
+    public Guid MovieId { get; set; }
     
     [Required]
     [ForeignKey(nameof(MediaType))]

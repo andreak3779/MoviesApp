@@ -1,16 +1,38 @@
+using System.ComponentModel.DataAnnotations;
 using MoviesApi.Models;
 
 namespace MoviesApi.DTOs;
 
 /// <summary>
-/// DTO for creating/updating a movie with related media types and film genres
+/// DTO for creating a new movie
 /// </summary>
-public class MovieDto
+public class MovieCreateDto
 {
+    [Required]
+    [StringLength(200, MinimumLength = 1)]
     public string Title { get; set; } = string.Empty;
+    
+    [Required]
+    [Range(1888, 2100)]
     public int ReleaseYear { get; set; }
+    
     public List<int> MediaTypeIds { get; set; } = new();
     public List<int> FilmGenreIds { get; set; } = new();
+}
+
+/// <summary>
+/// DTO for updating an existing movie (all properties optional)
+/// </summary>
+public class MovieUpdateDto
+{
+    [StringLength(200, MinimumLength = 1)]
+    public string? Title { get; set; }
+    
+    [Range(1888, 2100)]
+    public int? ReleaseYear { get; set; }
+    
+    public List<int>? MediaTypeIds { get; set; }
+    public List<int>? FilmGenreIds { get; set; }
 }
 
 /// <summary>
@@ -18,9 +40,12 @@ public class MovieDto
 /// </summary>
 public class MovieResponseDto
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public int ReleaseYear { get; set; }
+    public string OwnerId { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
     public List<MediaTypeDto> MediaTypes { get; set; } = new();
     public List<FilmGenreDto> FilmGenres { get; set; } = new();
 }
