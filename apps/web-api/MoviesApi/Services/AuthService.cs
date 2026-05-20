@@ -6,9 +6,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using MoviesApi.Data;
+using MoviesApiData.Data;
 using MoviesApi.DTOs;
-using MoviesApi.Models;
+using MoviesApiDomain.Models;
 
 namespace MoviesApi.Services;
 

@@ -5,10 +5,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using MoviesApi.Data;
+using MoviesApiData.Data;
 using MoviesApi.Middleware;
-using MoviesApi.Models;
-using MoviesApi.Repositories;
+using MoviesApiDomain.Models;
+using MoviesApiData.Repositories;
 using MoviesApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);

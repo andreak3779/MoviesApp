@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using MoviesApi.Data;
-using MoviesApi.Models;
+using MoviesApiData.Data;
+using MoviesApiDomain.Models;
 
 namespace MoviesApi.Services;
 
