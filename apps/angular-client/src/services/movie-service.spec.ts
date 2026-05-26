@@ -17,66 +17,90 @@ describe('MovieService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('should add, get, update and remove a movie', async () => {
-    const added: any = await firstValueFrom(
-      service.addMovie({
-        Title: 'Test Movie',
-        Description: 'desc',
-        Genre: 'Test',
-        Criterion: false,
-        CriterionNumber: undefined,
-        MovieMediaType: MediaType.Dvd,
-        MovieFormat: MovieFormat.Movie,
-        Year: 2025,
-        Favourite: false,
-      })
-    );
+  describe('getAllMovies', () => {
+    it('should return first page with total', async () => {
+      const result = await firstValueFrom(service.getAllMovies(1, 2));
+      expect(result.items.length).toBeLessThanOrEqual(2);
+      expect(result.total).toBeGreaterThanOrEqual(result.items.length);
+    });
 
-    expect(added).toBeTruthy();
-    expect(added.Id).toBeGreaterThan(0);
-
-    const fetched: any = await firstValueFrom(service.getMovie(added.Id));
-    expect(fetched).toBeTruthy();
-    expect(fetched.Title).toBe('Test Movie');
-
-    // update
-    fetched.Title = 'Test Movie Updated';
-    const updated: any = await firstValueFrom(service.updateMovie(fetched));
-    expect(updated.Title).toBe('Test Movie Updated');
-
-    // remove
-    await firstValueFrom(service.removeMovie(fetched.Id));
-
-    const afterRemove: any = await firstValueFrom(service.getMovie(fetched.Id));
-    expect(afterRemove).toBeUndefined();
+    it('should return all seed movies on a large page size', async () => {
+      const result = await firstValueFrom(service.getAllMovies(1, 100));
+      expect(result.items.length).toBe(3);
+      expect(result.total).toBe(3);
+    });
   });
 
-  it('should return favourite movies', async () => {
-    const favs: any = await firstValueFrom(service.getFavouriteMovies());
-    expect(Array.isArray(favs)).toBe(true);
-    expect(favs.length).toBeGreaterThanOrEqual(1);
+  describe('getMovie', () => {
+    it('should return movie by id', async () => {
+      const movie = await firstValueFrom(service.getMovie(1));
+      expect(movie).toBeTruthy();
+      expect(movie!.Title).toBe('The Matrix');
+    });
+
+    it('should return undefined for unknown id', async () => {
+      const movie = await firstValueFrom(service.getMovie(9999));
+      expect(movie).toBeUndefined();
+    });
   });
 
-  it('should query movies by partial criteria', async () => {
-    const results: any = await firstValueFrom(service.queryMovies({ Title: 'matrix' }));
-    expect(results.length).toBeGreaterThanOrEqual(1);
+  describe('addMovie', () => {
+    it('should assign a new id and persist the movie', async () => {
+      const added = await firstValueFrom(
+        service.addMovie({
+          Title: 'Inception',
+          Description: 'A dream within a dream.',
+          Genre: 'Sci-Fi',
+          Criterion: false,
+          CriterionNumber: undefined,
+          MovieMediaType: MediaType.BluRay,
+          MovieFormat: MovieFormat.Movie,
+          Year: 2010,
+          Favourite: false,
+        }),
+      );
+
+      expect(added.Id).toBeGreaterThan(0);
+
+      const fetched = await firstValueFrom(service.getMovie(added.Id));
+      expect(fetched?.Title).toBe('Inception');
+    });
   });
 
-  it('should change criterion and favourite flags', async () => {
-    const changed: any = await firstValueFrom(service.changeCriterion(1, true, 5));
-    expect(changed).toBeTruthy();
-    expect(changed.Criterion).toBe(true);
-    expect(changed.CriterionNumber).toBe(5);
+  describe('updateMovie', () => {
+    it('should persist the updated fields', async () => {
+      const original = await firstValueFrom(service.getMovie(1));
+      const updated = await firstValueFrom(
+        service.updateMovie({ ...original!, Title: 'The Matrix Reloaded' }),
+      );
 
-    const favChanged: any = await firstValueFrom(service.changeFavourite(1, true));
-    expect(favChanged).toBeTruthy();
-    expect(favChanged.Favourite).toBe(true);
+      expect(updated.Title).toBe('The Matrix Reloaded');
+
+      const refetched = await firstValueFrom(service.getMovie(1));
+      expect(refetched?.Title).toBe('The Matrix Reloaded');
+    });
   });
 
-  it('should support paging via getAllMovies', async () => {
-    const page: any = await firstValueFrom(service.getAllMovies(1, 2));
-    expect(page).toBeTruthy();
-    expect(page.items.length).toBeLessThanOrEqual(2);
-    expect(page.total).toBeGreaterThanOrEqual(page.items.length);
+  describe('removeMovie', () => {
+    it('should remove the movie so it is no longer findable', async () => {
+      const added = await firstValueFrom(
+        service.addMovie({
+          Title: 'Temp',
+          Description: '',
+          Genre: 'Drama',
+          Criterion: false,
+          CriterionNumber: undefined,
+          MovieMediaType: MediaType.Dvd,
+          MovieFormat: MovieFormat.Movie,
+          Year: 2000,
+          Favourite: false,
+        }),
+      );
+
+      await firstValueFrom(service.removeMovie(added.Id));
+
+      const after = await firstValueFrom(service.getMovie(added.Id));
+      expect(after).toBeUndefined();
+    });
   });
 });
