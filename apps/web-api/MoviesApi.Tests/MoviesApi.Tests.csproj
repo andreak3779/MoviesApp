@@ -21,6 +21,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MoviesApi\MoviesApi.csproj" />
+    <ProjectReference Include="..\MoviesApiData\MoviesApiData.csproj" />
+    <ProjectReference Include="..\MoviesApiDomain\MoviesApiDomain.csproj" />
   </ItemGroup>
 
 </Project>

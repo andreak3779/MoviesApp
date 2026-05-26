@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using MoviesApi.Models;
+using MoviesApiDomain.Models;
 
 namespace MoviesApi.DTOs;
 

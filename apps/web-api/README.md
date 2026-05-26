@@ -1,6 +1,43 @@
 # MoviesAPI - OWASP Top 10 Compliant Web API
 
+**Project Structure**: Clean Architecture with separated Domain, Data, and API layers
+
 Secure, production-ready ASP.NET Core Web API for managing movie collections with full OWASP Top 10 API Security compliance.
+
+## 🏗️ Architecture
+
+This solution follows **Clean Architecture** principles with clear separation of concerns:
+
+```
+MoviesAPI.sln
+├── MoviesApiDomain/     # Domain Layer - Business entities
+├── MoviesApiData/       # Data Layer - EF Core, Repositories, Migrations
+├── MoviesApi/           # API Layer - Controllers, Services, DTOs
+└── MoviesApi.Tests/     # Test Project - Unit tests
+```
+
+### Layer Responsibilities
+
+| Project | Purpose | Dependencies |
+|---------|---------|--------------|
+| **MoviesApiDomain** | Pure domain entities (POCOs) | None |
+| **MoviesApiData** | Data access (DbContext, Repositories, Migrations) | MoviesApiDomain |
+| **MoviesApi** | Web API (Controllers, Services, DTOs, Auth) | MoviesApiDomain, MoviesApiData |
+| **MoviesApi.Tests** | Unit tests | All projects |
+
+### Dependency Flow
+```
+MoviesApi → MoviesApiData → MoviesApiDomain
+```
+
+**Benefits:**
+- ✅ Clear separation of concerns
+- ✅ Testable components
+- ✅ No circular dependencies
+- ✅ Easy to maintain and extend
+- ✅ Follows SOLID principles
+
+---
 
 ## 🔒 Security Features
 
