@@ -134,5 +134,6 @@ Use the monorepo runbook for branch strategy, subtree imports, and gate checks:
 
 - `docs/ARCHITECTURE.md`
 - `docs/CI-CD.md`
+- `docs/KUBERNETES-PLAN.md`
 - `docs/moviesapp-diagram.mmd`
 - `AGENTS.md`
