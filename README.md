@@ -191,6 +191,15 @@ The default sprint configuration is **AKS Free tier + `Standard_B1s` + Container
 
 The AKS control plane dominates at Standard tier ($73/month). Use Standard only if a specific job application asks for an SLA‑backed cluster.
 
+> **Status of this block.** The Kubernetes artifacts under `k8s/` and the
+> Azure deployment work are deferred to the **next 14‑day sprint**
+> (Sat 19 → Sat 3 Oct 2026). This sprint (Sat 5 → Sun 13 Sept) is a
+> Kubernetes learning track: one concept per day, validated locally on
+> Zorin with [`scripts/zorin-kind.sh`](scripts/zorin-kind.sh), journaled
+> under [`docs/k8s/learn/`](docs/k8s/learn/README.md). No cloud, no ACR,
+> no cost. After this block, the AKS push is an afternoon's work because
+> you understand the manifests.
+
 ---
 
 ## Contributor Workflow
