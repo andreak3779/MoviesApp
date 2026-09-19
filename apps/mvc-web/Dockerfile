@@ -6,11 +6,15 @@ RUN dotnet publish MoviesWeb/MoviesWeb.csproj -c Release -o /app/publish --no-re
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
-RUN apt-get update \
+RUN groupadd --gid 1000 app \
+    && useradd --uid 1000 --gid 1000 --shell /usr/sbin/nologin --create-home --home-dir /home/app app \
+    && apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 ENV ASPNETCORE_URLS=http://+:8080
 COPY --from=build /app/publish .
+RUN chown -R app:app /app
+USER app
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD curl --fail http://127.0.0.1:8080/health || exit 1
 CMD ["dotnet", "MoviesWeb.dll"]

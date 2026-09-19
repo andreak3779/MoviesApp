@@ -1,0 +1,85 @@
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly Sunday 06:00 UTC scan — covers branches we haven't seen.
+    - cron: '0 6 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gitleaks:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_CONFIG: .gitleaks.toml
+
+      - name: Upload gitleaks report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-report
+          path: gitleaks-report.json
+          if-no-errors-found: ignore
+
+  npm-audit:
+    name: npm audit (angular-client)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/angular-client
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.11.1
+          cache: npm
+          cache-dependency-path: apps/angular-client/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit for high-severity vulnerabilities
+        # Do not fail on moderate (dev-only) findings; block merges only on high/critical.
+        run: npm audit --audit-level=high --omit=dev
+
+  dotnet-vulnerable:
+    name: dotnet vulnerable (web-api + mvc-web)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Audit Web API dependencies
+        working-directory: apps/web-api
+        run: dotnet list MoviesAPI.sln package --vulnerable --include-transitive
+
+      - name: Audit MVC dependencies
+        working-directory: apps/mvc-web
+        run: dotnet list MoviesWeb.sln package --vulnerable --include-transitive

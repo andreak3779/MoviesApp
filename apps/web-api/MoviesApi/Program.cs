@@ -15,6 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
+builder.Services.AddProblemDetails();
 builder.Services.AddEndpointsApiExplorer();
 
 // Add DbContext with SQLite
@@ -37,7 +38,26 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 
 // Add JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey not configured");
+var secretKey = jwtSettings["SecretKey"]
+    ?? throw new InvalidOperationException("JWT SecretKey not configured");
+
+// Fail fast on the placeholder key shipped with appsettings.json. The same
+// guard is duplicated in AuthService so both code paths refuse the
+// placeholder; see also .gitleaks.toml for the allowlist.
+const string PlaceholderJwtKey =
+    "CHANGE_THIS_TO_A_SECURE_RANDOM_STRING_MIN_32_CHARS_IN_PRODUCTION";
+if (string.Equals(secretKey, PlaceholderJwtKey, StringComparison.Ordinal))
+{
+    throw new InvalidOperationException(
+        "JwtSettings:SecretKey is still the placeholder value. " +
+        "Set a real 32+ byte secret via user-secrets (dev) or an environment " +
+        "variable (prod) before starting the API.");
+}
+if (Encoding.UTF8.GetByteCount(secretKey) < 32)
+{
+    throw new InvalidOperationException(
+        "JwtSettings:SecretKey must be at least 32 bytes when UTF-8 encoded.");
+}
 
 builder.Services.AddAuthentication(options =>
 {
@@ -95,11 +115,36 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // Add CORS
+// Origins come from configuration (Cors:AllowedOrigins). In Production we
+// refuse to start if any origin matches the placeholder literal that the
+// repository ships with, because AllowCredentials() makes an over-permissive
+// origin list genuinely dangerous.
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>() ?? Array.Empty<string>();
+
+if (builder.Environment.IsProduction())
+{
+    var placeholders = new[] { "https://your-production-domain.com", "http://localhost" };
+    foreach (var origin in allowedOrigins)
+    {
+        foreach (var placeholder in placeholders)
+        {
+            if (origin.StartsWith(placeholder, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"Cors:AllowedOrigins contains the placeholder value '{origin}'. " +
+                    "Configure real origins before starting the API in Production.");
+            }
+        }
+    }
+}
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:4200", "https://your-production-domain.com")
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();

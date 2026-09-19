@@ -15,3 +15,13 @@ shared:
   - '.env.example'
   - 'docker-compose.yml'
   - 'docs/**'
+  - '.pre-commit-config.yaml'
+  - '.gitleaks.toml'
+  - '.gitignore'
+
+security:
+  - '**'
+  # The security workflow must always run regardless of which paths
+  # changed, so any push can be scanned for newly-introduced secrets.
+  ignore:
+    - 'docs/**'

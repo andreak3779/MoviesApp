@@ -6,12 +6,22 @@ RUN dotnet publish MoviesApi/MoviesApi.csproj -c Release -f net10.0 -o /app/publ
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
-RUN apt-get update \
+# Create a non-root user and group for the runtime. See
+# docs/SECURITY-OVERVIEW.md for the rationale.
+RUN groupadd --gid 1000 app \
+    && useradd --uid 1000 --gid 1000 --shell /usr/sbin/nologin --create-home --home-dir /home/app app \
+    && apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 ENV ASPNETCORE_URLS=http://+:8080
 ENV EnableHttpsRedirection=false
 COPY --from=build /app/publish .
+# Strip any SQLite databases that crept into the publish output. The
+# movies.db file is created at runtime by the application. See
+# docs/SECURITY-INCIDENT-2026-09-14.md.
+RUN find /app -maxdepth 2 -type f \( -name '*.db' -o -name '*.db-shm' -o -name '*.db-wal' \) -delete || true \
+    && chown -R app:app /app
+USER app
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD curl --fail http://127.0.0.1:8080/health || exit 1
 CMD ["dotnet", "MoviesApi.dll"]

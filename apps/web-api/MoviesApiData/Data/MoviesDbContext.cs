@@ -140,5 +140,20 @@ public class MoviesDbContext : IdentityDbContext<ApplicationUser>
             entity.HasIndex(e => e.Timestamp);
             entity.HasIndex(e => e.Action);
         });
+
+        // RefreshToken configuration. AccessTokenJti binds a refresh token to
+        // the access-token family so we can rotate safely; Consumed enforces
+        // single-use and is written atomically during RefreshTokenAsync.
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.ToTable("RefreshTokens");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Token).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.UserId).IsRequired();
+            entity.Property(e => e.AccessTokenJti).HasMaxLength(64);
+            entity.Property(e => e.Consumed).IsRequired();
+            entity.HasIndex(e => e.Token);
+            entity.HasIndex(e => new { e.UserId, e.Consumed });
+        });
     }
 }

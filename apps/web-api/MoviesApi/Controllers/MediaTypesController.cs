@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoviesApiDomain.Models;
 using MoviesApiData.Repositories;
+using MoviesApi.DTOs;
 
 namespace MoviesApi.Controllers;
 
@@ -19,19 +20,26 @@ public class MediaTypesController : ControllerBase
 
     [HttpGet]
     [AllowAnonymous]
-    public async Task<ActionResult<IEnumerable<MediaType>>> GetAll()
+    public async Task<ActionResult<IEnumerable<MediaTypeDto>>> GetAll()
     {
         var mediaTypes = await _repository.GetAllAsync();
-        return Ok(mediaTypes);
+        return Ok(mediaTypes.Select(MapToDto));
     }
 
     [HttpGet("{id}")]
     [AllowAnonymous]
-    public async Task<ActionResult<MediaType>> GetById(int id)
+    public async Task<ActionResult<MediaTypeDto>> GetById(int id)
     {
         var mediaType = await _repository.GetByIdAsync(id);
         if (mediaType == null)
             return NotFound();
-        return Ok(mediaType);
+        return Ok(MapToDto(mediaType));
     }
+
+    private static MediaTypeDto MapToDto(MediaType mt) => new()
+    {
+        Id = mt.Id,
+        Name = mt.Name,
+        Description = mt.Description,
+    };
 }

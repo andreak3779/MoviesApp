@@ -35,6 +35,11 @@ This file gives concise, actionable conventions for AI coding agents working in 
 ## Security & Secrets
 - Never add credentials or secrets to the repo. Use environment variables and document required vars in PRs.
 - Sanitize user input before rendering in SSR paths to avoid XSS.
+- Never commit `*.db`, `.env*`, `secrets.json`, or `appsettings.*.local.json` — the
+  repo-level `.gitignore` already blocks these patterns. If you find a way around them,
+  stop and rotate the secret.
+- See [docs/SECRETS-MANAGEMENT.md](../docs/SECRETS-MANAGEMENT.md) and
+  [docs/SECURITY-INCIDENT-2026-09-14.md](../docs/SECURITY-INCIDENT-2026-09-14.md).
 
 ## Editing Guidance for Agents
 - Always run the repository's build and tests after non-trivial changes in `apps/angular-client/`:

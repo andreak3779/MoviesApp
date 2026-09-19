@@ -1,0 +1,43 @@
+# Pre-commit hooks for the MoviesApp monorepo.
+# Install locally with:
+#   pip install pre-commit
+#   pre-commit install
+# Optional global secret scanner:
+#   pre-commit install --hook-type pre-push
+#
+# See docs/SECURITY-OVERVIEW.md and docs/SECURITY-INCIDENT-2026-09-14.md.
+
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+        name: Detect hard-coded secrets (gitleaks)
+        # Run on every commit attempt; gitleaks also exposes `protect` mode
+        # for use as a pre-push hook (see comment above).
+        args: ["--config", ".gitleaks.toml"]
+
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        name: Detect hard-coded secrets (Yelp baseline)
+        args: ["--baseline-files", ".secrets.baseline"]
+
+  # Generic guard rails against the leak categories from
+  # SECURITY-INCIDENT-2026-09-14.md:
+  #   - no *.db anywhere
+  #   - no .env* files except .env.example
+  - repo: local
+    hooks:
+      - id: no-sqlite-dbs
+        name: Block SQLite database files from being committed
+        entry: bash -c 'git diff --cached --name-only --diff-filter=ACR | grep -E "\.(db|db-shm|db-wal)$" && exit 1 || exit 0'
+        language: system
+        pass_filenames: false
+
+      - id: no-env-files
+        name: Block .env* files except .env.example
+        entry: bash -c 'git diff --cached --name-only --diff-filter=ACR | grep -E "^\.env(\..+)?$" | grep -v "^\.env\.example$" && exit 1 || exit 0'
+        language: system
+        pass_filenames: false

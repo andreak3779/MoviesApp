@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoviesApiDomain.Models;
 using MoviesApiData.Repositories;
+using MoviesApi.DTOs;
 
 namespace MoviesApi.Controllers;
 
@@ -19,19 +20,26 @@ public class FilmGenresController : ControllerBase
 
     [HttpGet]
     [AllowAnonymous]
-    public async Task<ActionResult<IEnumerable<FilmGenre>>> GetAll()
+    public async Task<ActionResult<IEnumerable<FilmGenreDto>>> GetAll()
     {
         var filmGenres = await _repository.GetAllAsync();
-        return Ok(filmGenres);
+        return Ok(filmGenres.Select(MapToDto));
     }
 
     [HttpGet("{id}")]
     [AllowAnonymous]
-    public async Task<ActionResult<FilmGenre>> GetById(int id)
+    public async Task<ActionResult<FilmGenreDto>> GetById(int id)
     {
         var filmGenre = await _repository.GetByIdAsync(id);
         if (filmGenre == null)
             return NotFound();
-        return Ok(filmGenre);
+        return Ok(MapToDto(filmGenre));
     }
+
+    private static FilmGenreDto MapToDto(FilmGenre fg) => new()
+    {
+        Id = fg.Id,
+        Name = fg.Name,
+        Description = fg.Description,
+    };
 }

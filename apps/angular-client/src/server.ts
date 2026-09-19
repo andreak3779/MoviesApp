@@ -52,6 +52,23 @@ app.use((req, res, next) => {
 });
 
 /**
+ * Generic error handler — never echoes a stack trace to the client. Logs
+ * server-side for diagnostics. Activated by the .catch(next) above.
+ */
+app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  // We can't log "err" directly — it might not be an Error.
+  const message = err instanceof Error ? err.message : String(err);
+  // Express's default logger isn't wired here; rely on the platform logger
+  // (server.ts is the entry point and Node will print stack traces by default
+  // when not in production). Keep one console.error for operators.
+  // eslint-disable-next-line no-console
+  console.error('[SSR] unhandled error:', message);
+  if (!res.headersSent) {
+    res.status(500).json({ status: 'error', traceId: (res.locals as Record<string, unknown> | undefined)?.['traceId'] ?? null });
+  }
+});
+
+/**
  * Start the server if this module is the main entry point, or it is ran via PM2.
  * The server listens on the port defined by the `PORT` environment variable, or defaults to 4000.
  */

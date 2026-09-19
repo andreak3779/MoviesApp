@@ -89,8 +89,8 @@ namespace MoviesApi.Controllers
             // Audit log
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
             var userAgent = HttpContext.Request.Headers.UserAgent.FirstOrDefault() ?? "unknown";
-            await _auditLogService.LogAsync(userId, "CREATE", "Movie", createdMovie.Id.ToString(), 
-                null, movieDto, ipAddress, userAgent, HttpContext.Request.Path);
+            await _auditLogService.LogAsync(userId, "CREATE", "Movie", createdMovie.Id.ToString(),
+                null, Services.SensitiveFieldRedactor.Redact(movieDto), ipAddress, userAgent, HttpContext.Request.Path);
 
             var response = MapToResponseDto(createdMovie);
             return CreatedAtAction(nameof(GetById), new { id = response.Id }, response);
@@ -153,8 +153,8 @@ namespace MoviesApi.Controllers
             // Audit log
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
             var userAgent = HttpContext.Request.Headers.UserAgent.FirstOrDefault() ?? "unknown";
-            await _auditLogService.LogAsync(userId, "UPDATE", "Movie", id.ToString(), 
-                oldValues, movieDto, ipAddress, userAgent, HttpContext.Request.Path);
+            await _auditLogService.LogAsync(userId, "UPDATE", "Movie", id.ToString(),
+                oldValues, Services.SensitiveFieldRedactor.Redact(movieDto), ipAddress, userAgent, HttpContext.Request.Path);
 
             return NoContent();
         }

@@ -18,8 +18,13 @@ namespace MoviesWeb.Models
 
         public bool Authenticate(string password)
         {
-            // Implement authentication logic here (e.g., check password hash)
-            return true; // Placeholder for successful authentication
+            // Authentication is intentionally not implemented in this demo
+            // project. A previous version of this method returned `true`
+            // unconditionally, which made any caller appear authenticated.
+            // See docs/SECURITY-OVERVIEW.md.
+            throw new NotImplementedException(
+                "Authentication is not implemented. Wire this up through ASP.NET " +
+                "Core Identity (see MoviesApi) before relying on this path.");
         }
     }
 }

@@ -1,0 +1,24 @@
+# Gitleaks configuration for the MoviesApp monorepo.
+# See https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml
+#
+# The defaults already cover JWTs, AWS keys, GitHub PATs, etc. This file
+# adds repo-specific allow-rules and a custom rule for the JWT secret
+# placeholder we ship in appsettings.json (it's a placeholder, not a
+# real key, so we must allow the literal string to exist on disk).
+
+title = "MoviesApp gitleaks rules"
+
+# Allow the literal placeholder JWT key to exist in appsettings.json (it
+# is the documented sentinel that causes the app to refuse to start).
+[allowlist]
+  description = "MovieApp allow-list for placeholder JWT and similar"
+  paths = [
+    '''appsettings\.json$''',
+    '''appsettings\.Development\.json$''',
+    '''docs/SECURITY-INCIDENT-2026-09-14\.md$''',
+  ]
+  regexes = [
+    '''CHANGE_THIS_TO_A_SECURE_RANDOM_STRING_MIN_32_CHARS_IN_PRODUCTION''',
+    '''your-production-domain\.com''',
+    '''moviesapp-k8s''',
+  ]

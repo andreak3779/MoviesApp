@@ -1,8 +1,14 @@
-using System.Net;
+using System.Diagnostics;
 using System.Text.Json;
+using Microsoft.AspNetCore.Mvc;
 
 namespace MoviesApi.Middleware;
 
+/// <summary>
+/// Translates uncaught exceptions into RFC 7807 <see cref="ProblemDetails"/>
+/// responses with a <c>traceId</c> for log correlation. Never echoes the
+/// request path or stack trace to the client.
+/// </summary>
 public class ExceptionHandlingMiddleware
 {
     private readonly RequestDelegate _next;
@@ -22,23 +28,21 @@ public class ExceptionHandlingMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred: {Message}", ex.Message);
+            _logger.LogError(ex, "An error occurred while processing {Method} {Path}",
+                context.Request.Method, context.Request.Path);
             await HandleExceptionAsync(context, ex);
         }
     }
 
     private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
-        context.Response.ContentType = "application/json";
-        
-        var response = new
+        // If the response has already started we cannot safely replace it.
+        if (context.Response.HasStarted)
         {
-            error = GetErrorMessage(exception),
-            details = "An error occurred while processing your request",
-            path = context.Request.Path
-        };
+            return;
+        }
 
-        context.Response.StatusCode = exception switch
+        var statusCode = exception switch
         {
             UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
             ArgumentException => StatusCodes.Status400BadRequest,
@@ -46,14 +50,28 @@ public class ExceptionHandlingMiddleware
             _ => StatusCodes.Status500InternalServerError
         };
 
-        await context.Response.WriteAsync(JsonSerializer.Serialize(response));
-    }
+        var problem = new ProblemDetails
+        {
+            Status = statusCode,
+            Title = statusCode switch
+            {
+                400 => "Bad request",
+                401 => "Unauthorized",
+                404 => "Not found",
+                _ => "Internal server error"
+            },
+            Detail = statusCode >= 500
+                ? "An unexpected error occurred while processing the request."
+                : exception.Message,
+            Type = $"https://httpstatuses.com/{statusCode}",
+            Instance = context.Request.Path,
+        };
+        problem.Extensions["traceId"] = Activity.Current?.Id ?? context.TraceIdentifier;
 
-    private static string GetErrorMessage(Exception ex) => ex switch
-    {
-        UnauthorizedAccessException => "Unauthorized",
-        ArgumentException => "Invalid request",
-        KeyNotFoundException => "Resource not found",
-        _ => "Internal server error"
-    };
+        context.Response.Clear();
+        context.Response.StatusCode = statusCode;
+        context.Response.ContentType = "application/problem+json";
+
+        await context.Response.WriteAsync(JsonSerializer.Serialize(problem));
+    }
 }

@@ -36,7 +36,10 @@ public class AuthController : ControllerBase
 
         if (result == null)
         {
-            return BadRequest(new { error = "Registration failed", details = "The email address may already be in use or password requirements were not met" });
+            // Generic message — do NOT distinguish "email already exists" from
+            // "password rejected". Differentiating lets attackers enumerate
+            // which emails are registered. See OWASP API2.
+            return BadRequest(new { error = "Registration failed" });
         }
 
         return CreatedAtAction(nameof(Register), result);
@@ -101,7 +104,15 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Logout([FromBody] RefreshTokenDto dto)
     {
-        var result = await _authService.RevokeTokenAsync(dto.RefreshToken);
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "User ID not found" });
+        }
+
+        // Scope the revocation to the current user so a caller cannot use
+        // this endpoint to revoke another user's refresh token.
+        var result = await _authService.RevokeTokenAsync(userId, dto.RefreshToken);
 
         if (!result)
         {

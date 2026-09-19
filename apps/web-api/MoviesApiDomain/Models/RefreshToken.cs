@@ -11,13 +11,29 @@ public class RefreshToken
     [Required]
     [MaxLength(500)]
     public string Token { get; set; } = string.Empty;
-    
+
     [Required]
     public string UserId { get; set; } = string.Empty;
-    
+
     [ForeignKey(nameof(UserId))]
     public ApplicationUser? User { get; set; }
-    
+
+    /// <summary>
+    /// The <c>jti</c> claim of the access token this refresh token was issued
+    /// for. Used to bind a refresh token to the access-token family, so
+    /// rotating the access token also invalidates outstanding refresh tokens.
+    /// </summary>
+    [MaxLength(64)]
+    public string? AccessTokenJti { get; set; }
+
+    /// <summary>
+    /// When true, this refresh token has been used to mint a new pair and can
+    /// never be used again. Single-use enforcement closes the replay window.
+    /// </summary>
+    public bool Consumed { get; set; }
+
+    public DateTime? ConsumedAt { get; set; }
+
     [Required]
     public DateTime ExpiresAt { get; set; }
     

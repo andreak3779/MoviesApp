@@ -4,7 +4,7 @@ MoviesApp is a secure, production-ready movie collection management system organ
 
 - Angular client (with optional SSR)
 - ASP.NET Core MVC web app
-- **OWASP Top 10 Compliant** ASP.NET Core Web API
+- ASP.NET Core Web API (partial OWASP Top 10 coverage — see [SECURITY-OVERVIEW.md](docs/SECURITY-OVERVIEW.md))
 
 This layout allows independent app development while keeping CI/CD, container orchestration, and contribution workflows centralized.
 
@@ -12,7 +12,8 @@ This layout allows independent app development while keeping CI/CD, container or
 
 - `apps/angular-client`: Angular 21 client (with optional SSR)
 - `apps/mvc-web`: ASP.NET Core MVC app
-- `apps/web-api`: **OWASP Top 10 Compliant** ASP.NET Core Web API
+- `apps/web-api`: ASP.NET Core Web API (partial OWASP Top 10 coverage — see
+  [docs/SECURITY-OVERVIEW.md](docs/SECURITY-OVERVIEW.md))
 - `.github/workflows`: Root-owned CI/CD workflows
 - `docs`: Architecture, CI/CD, contributor, security, and deployment documentation
 - `docker-compose.yml`: Local full-stack container orchestration
@@ -65,7 +66,7 @@ dotnet build MoviesWeb.sln --configuration Release
 dotnet test MoviesWeb.sln --configuration Release
 ```
 
-### 4. Web API app (OWASP Top 10 Compliant)
+### 4. Web API app (partial OWASP Top 10 coverage)
 
 ```bash
 cd apps/web-api/MoviesApi

@@ -17,7 +17,13 @@ public interface IAuthService
     Task<AuthResponseDto?> RegisterAsync(RegisterDto dto);
     Task<AuthResponseDto?> LoginAsync(LoginDto dto);
     Task<AuthResponseDto?> RefreshTokenAsync(string token, string refreshToken);
-    Task<bool> RevokeTokenAsync(string refreshToken);
+
+    /// <summary>
+    /// Revokes a refresh token. The userId parameter is the caller's
+    /// authenticated user id and is used to scope the lookup so a user
+    /// cannot revoke another user's refresh token.
+    /// </summary>
+    Task<bool> RevokeTokenAsync(string userId, string refreshToken);
 }
 
 public class AuthService : IAuthService
@@ -105,7 +111,10 @@ public class AuthService : IAuthService
                 return null;
             }
 
-            // Find and validate refresh token
+            // The refresh token must belong to *this* user and bind to the
+            // same jti family as the access token the caller presented. A
+            // stolen refresh token alone is no longer sufficient.
+            var jti = principal.FindFirstValue(JwtRegisteredClaimNames.Jti);
             var storedToken = await _context.RefreshTokens
                 .FirstOrDefaultAsync(rt => rt.Token == refreshToken && rt.UserId == user.Id);
 
@@ -114,12 +123,48 @@ public class AuthService : IAuthService
                 return null;
             }
 
-            // Revoke old token
-            storedToken.RevokedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+            if (!string.IsNullOrEmpty(storedToken.AccessTokenJti) &&
+                !string.Equals(storedToken.AccessTokenJti, jti, StringComparison.Ordinal))
+            {
+                // Suspicious: caller is presenting a refresh token whose
+                // jti family doesn't match the access token. Reject.
+                return null;
+            }
 
-            // Generate new tokens
-            return await GenerateAuthResponseAsync(user);
+            // Atomic single-use revoke: in one round-trip, refuse to read
+            // the token again if it has already been consumed. Avoids the
+            // race where two concurrent refreshes both succeed.
+            var now = DateTime.UtcNow;
+            var rows = await _context.RefreshTokens
+                .Where(rt => rt.Id == storedToken.Id && !rt.Consumed && rt.RevokedAt == null)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(rt => rt.Consumed, true)
+                    .SetProperty(rt => rt.ConsumedAt, now)
+                    .SetProperty(rt => rt.RevokedAt, now));
+
+            if (rows == 0)
+            {
+                // Already consumed — treat as replay and refuse.
+                return null;
+            }
+
+            // Generate new tokens. Note: the new refresh token carries the
+            // jti of the *new* access token, so the next refresh must
+            // present a token from the same family.
+            var response = await GenerateAuthResponseAsync(user);
+            if (response is not null && jti is not null)
+            {
+                // Persist the new refresh token's jti binding.
+                var newRefresh = await _context.RefreshTokens
+                    .FirstOrDefaultAsync(rt => rt.Token == response.RefreshToken);
+                if (newRefresh is not null)
+                {
+                    newRefresh.AccessTokenJti = ExtractJtiFromJwt(response.Token);
+                }
+                await _context.SaveChangesAsync();
+            }
+
+            return response;
         }
         catch (Exception)
         {
@@ -127,10 +172,10 @@ public class AuthService : IAuthService
         }
     }
 
-    public async Task<bool> RevokeTokenAsync(string refreshToken)
+    public async Task<bool> RevokeTokenAsync(string userId, string refreshToken)
     {
         var token = await _context.RefreshTokens
-            .FirstOrDefaultAsync(rt => rt.Token == refreshToken);
+            .FirstOrDefaultAsync(rt => rt.Token == refreshToken && rt.UserId == userId);
 
         if (token == null || !token.IsActive)
         {
@@ -138,20 +183,37 @@ public class AuthService : IAuthService
         }
 
         token.RevokedAt = DateTime.UtcNow;
+        token.Consumed = true;
+        token.ConsumedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    private static string? ExtractJtiFromJwt(string token)
+    {
+        try
+        {
+            var parsed = new JwtSecurityTokenHandler().ReadJwtToken(token);
+            return parsed.Id;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private async Task<AuthResponseDto> GenerateAuthResponseAsync(ApplicationUser user)
     {
         var jwtToken = GenerateJwtToken(user);
         var refreshToken = GenerateRefreshToken();
+        var jti = jwtToken.Id;
 
-        // Store refresh token
+        // Store refresh token, bound to the new access token's jti family.
         var refreshTokenEntity = new RefreshToken
         {
             Token = refreshToken,
             UserId = user.Id,
+            AccessTokenJti = jti,
             ExpiresAt = DateTime.UtcNow.AddDays(
                 _configuration.GetValue<int>("JwtSettings:RefreshTokenExpirationDays", 7)),
             CreatedAt = DateTime.UtcNow
@@ -174,7 +236,9 @@ public class AuthService : IAuthService
     private JwtSecurityToken GenerateJwtToken(ApplicationUser user)
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");
-        var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey not configured");
+        var secretKey = jwtSettings["SecretKey"]
+            ?? throw new InvalidOperationException("JWT SecretKey not configured");
+        EnsureSecretKeyIsValid(secretKey);
         var issuer = jwtSettings["Issuer"] ?? "MoviesApi";
         var audience = jwtSettings["Audience"] ?? "MoviesAppUsers";
         var expirationMinutes = jwtSettings.GetValue<int>("AccessTokenExpirationMinutes", 15);
@@ -215,10 +279,29 @@ public class AuthService : IAuthService
         return Convert.ToBase64String(randomNumber);
     }
 
+    private static void EnsureSecretKeyIsValid(string secretKey)
+    {
+        const string PlaceholderJwtKey =
+            "CHANGE_THIS_TO_A_SECURE_RANDOM_STRING_MIN_32_CHARS_IN_PRODUCTION";
+        if (string.Equals(secretKey, PlaceholderJwtKey, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "JwtSettings:SecretKey is the placeholder value; configure a real " +
+                "secret before starting the API.");
+        }
+        if (Encoding.UTF8.GetByteCount(secretKey) < 32)
+        {
+            throw new InvalidOperationException(
+                "JwtSettings:SecretKey must be at least 32 bytes (UTF-8).");
+        }
+    }
+
     private ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");
-        var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey not configured");
+        var secretKey = jwtSettings["SecretKey"]
+            ?? throw new InvalidOperationException("JWT SecretKey not configured");
+        EnsureSecretKeyIsValid(secretKey);
 
         var tokenValidationParameters = new TokenValidationParameters
         {

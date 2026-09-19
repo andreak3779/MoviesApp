@@ -28,9 +28,13 @@ public class AuditLoggingMiddleware
             var userAgent = context.Request.Headers.UserAgent.FirstOrDefault() ?? "unknown";
             var endpoint = context.Request.Path.ToString();
 
-            // Try to capture request body for CREATE/UPDATE
+            // Try to capture request body for CREATE/UPDATE. We do not capture
+            // bodies for auth surface routes at all, and we redact known
+            // sensitive field names (password, token, refreshToken, ...) from
+            // everything we do capture. See SensitiveFieldRedactor.
             object? requestBody = null;
-            if (action is "CREATE" or "UPDATE")
+            var dropBody = SensitiveFieldRedactor.ShouldDropBody(endpoint);
+            if (!dropBody && action is "CREATE" or "UPDATE")
             {
                 try
                 {
@@ -39,7 +43,8 @@ public class AuditLoggingMiddleware
                     var body = await reader.ReadToEndAsync();
                     if (!string.IsNullOrEmpty(body))
                     {
-                        requestBody = JsonSerializer.Deserialize<object>(body);
+                        var parsed = JsonSerializer.Deserialize<object>(body);
+                        requestBody = SensitiveFieldRedactor.Redact(parsed);
                     }
                     context.Request.Body.Position = 0;
                 }
@@ -52,13 +57,16 @@ public class AuditLoggingMiddleware
             // Log after the request completes
             await _next(context);
 
-            // Log the audit entry
+            // Log the audit entry. NewValues still carries the redacted body
+            // so investigators can see *what* the caller asked for without
+            // it containing credentials. Old values would require more
+            // complex tracking and are left null for now.
             await auditLogService.LogAsync(
                 userId,
                 action,
                 entityType,
                 entityId,
-                action == "UPDATE" ? requestBody : null, // Old values would require more complex tracking
+                action == "UPDATE" ? requestBody : null,
                 action is "CREATE" or "UPDATE" ? requestBody : null,
                 ipAddress,
                 userAgent,
