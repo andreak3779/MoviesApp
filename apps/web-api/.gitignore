@@ -45,3 +45,6 @@ Thumbs.db
 
 # Node.js (if applicable)
 node_modules/
+
+*.db
+*.env
