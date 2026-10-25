@@ -1,5 +1,11 @@
 # Project Separation Plan: MoviesApi → Domain + Data + API
 
+> **Historical document — do not treat as current state.** This file is kept
+> for the record. The authoritative snapshot of the codebase is
+> [PROJECT-STATUS.md](PROJECT-STATUS.md); the current system shape is in
+> [ARCHITECTURE.md](ARCHITECTURE.md). Where this document disagrees with those
+> two, they are right.
+
 ## Overview
 Separate the monolithic MoviesApi project into three layered projects following clean architecture principles.
 

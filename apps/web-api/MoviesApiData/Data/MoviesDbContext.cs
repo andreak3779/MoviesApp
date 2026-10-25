@@ -14,8 +14,10 @@ public class MoviesDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Movie> Movies { get; set; } = null!;
     public DbSet<MediaType> MediaTypes { get; set; } = null!;
     public DbSet<FilmGenre> FilmGenres { get; set; } = null!;
+    public DbSet<Format> Formats { get; set; } = null!;
     public DbSet<MovieMediaType> MovieMediaTypes { get; set; } = null!;
     public DbSet<MovieFilmGenre> MovieFilmGenres { get; set; } = null!;
+    public DbSet<MovieFormat> MovieFormats { get; set; } = null!;
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
     public DbSet<AuditLog> AuditLogs { get; set; } = null!;
 
@@ -31,14 +33,22 @@ public class MoviesDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
             entity.Property(e => e.ReleaseYear).IsRequired();
-            
+            entity.Property(e => e.Description).HasMaxLength(2000);
+            entity.Property(e => e.Favourite).IsRequired().HasDefaultValue(false);
+            entity.Property(e => e.Criterion).IsRequired().HasDefaultValue(false);
+
             // Configure many-to-many relationships
             entity.HasMany(m => m.MovieMediaTypes)
                   .WithOne(mm => mm.Movie)
                   .HasForeignKey(mm => mm.MovieId)
                   .OnDelete(DeleteBehavior.Cascade);
-            
+
             entity.HasMany(m => m.MovieFilmGenres)
+                  .WithOne(mf => mf.Movie)
+                  .HasForeignKey(mf => mf.MovieId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(m => m.MovieFormats)
                   .WithOne(mf => mf.Movie)
                   .HasForeignKey(mf => mf.MovieId)
                   .OnDelete(DeleteBehavior.Cascade);
@@ -64,7 +74,19 @@ public class MoviesDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
             entity.Property(e => e.Description).HasMaxLength(200);
-            
+
+            entity.HasIndex(e => e.Name).IsUnique();
+        });
+
+        // Format configuration (mirrors FilmGenre)
+        modelBuilder.Entity<Format>(entity =>
+        {
+            entity.ToTable("Formats");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Description).HasMaxLength(200);
+
             entity.HasIndex(e => e.Name).IsUnique();
         });
 
@@ -90,16 +112,33 @@ public class MoviesDbContext : IdentityDbContext<ApplicationUser>
         {
             entity.ToTable("MovieFilmGenres");
             entity.HasKey(e => e.Id);
-            
+
             entity.HasIndex(e => new { e.MovieId, e.FilmGenreId }).IsUnique();
-            
+
             entity.HasOne(e => e.Movie)
                   .WithMany(m => m.MovieFilmGenres)
                   .HasForeignKey(e => e.MovieId);
-            
+
             entity.HasOne(e => e.FilmGenre)
                   .WithMany(m => m.MovieFilmGenres)
                   .HasForeignKey(e => e.FilmGenreId);
+        });
+
+        // MovieFormat junction table configuration
+        modelBuilder.Entity<MovieFormat>(entity =>
+        {
+            entity.ToTable("MovieFormats");
+            entity.HasKey(e => e.Id);
+
+            entity.HasIndex(e => new { e.MovieId, e.FormatId }).IsUnique();
+
+            entity.HasOne(e => e.Movie)
+                  .WithMany(m => m.MovieFormats)
+                  .HasForeignKey(e => e.MovieId);
+
+            entity.HasOne(e => e.Format)
+                  .WithMany(f => f.MovieFormats)
+                  .HasForeignKey(e => e.FormatId);
         });
 
         // Seed data for MediaTypes
@@ -128,6 +167,13 @@ public class MoviesDbContext : IdentityDbContext<ApplicationUser>
             new FilmGenre { Id = 11, Name = "Animation", Description = "Animated films" },
             new FilmGenre { Id = 12, Name = "Fantasy", Description = "Magical and supernatural elements" },
             new FilmGenre { Id = 13, Name = "Crime", Description = "Criminal activities and investigations" }
+        );
+
+        // Seed data for Formats (mockup's third lookup kind)
+        modelBuilder.Entity<Format>().HasData(
+            new Format { Id = 1, Name = "Movie", Description = "Standalone feature film" },
+            new Format { Id = 2, Name = "TVSeries", Description = "Multi-episode series" },
+            new Format { Id = 3, Name = "BoxSet", Description = "Bundled multi-title collection" }
         );
 
         // AuditLog configuration

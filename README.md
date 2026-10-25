@@ -2,15 +2,24 @@
 
 MoviesApp is a secure, production-ready movie collection management system organized as a single monorepo containing three applications:
 
-- Angular client (with optional SSR)
+- Angular 22 client (with optional SSR)
 - ASP.NET Core MVC web app
 - ASP.NET Core Web API (partial OWASP Top 10 coverage — see [SECURITY-OVERVIEW.md](docs/SECURITY-OVERVIEW.md))
 
 This layout allows independent app development while keeping CI/CD, container orchestration, and contribution workflows centralized.
 
+> **Current state.** All three apps build and all three test suites are green
+> (**93 tests**: Angular 26, Web API 35, MVC 32). The MVC app and the Web API
+> have been verified end-to-end against each other. The Angular client is a
+> complete application but is **not yet pointed at the live API contract** —
+> it calls `/api/v1/movies` (the real route is the singular `/api/v1/Movie`)
+> and expects PascalCase while the API emits camelCase. See
+> [PROJECT-STATUS.md](docs/PROJECT-STATUS.md) for the full picture, including
+> three open API defects.
+
 ## Repository Layout
 
-- `apps/angular-client`: Angular 21 client (with optional SSR)
+- `apps/angular-client`: Angular 22 client (with optional SSR)
 - `apps/mvc-web`: ASP.NET Core MVC app
 - `apps/web-api`: ASP.NET Core Web API (partial OWASP Top 10 coverage — see
   [docs/SECURITY-OVERVIEW.md](docs/SECURITY-OVERVIEW.md))
@@ -21,7 +30,7 @@ This layout allows independent app development while keeping CI/CD, container or
 
 ## Prerequisites
 
-- Node.js 24.x (Angular app engines currently target 24.11.1)
+- Node.js 24.x (`apps/angular-client/package.json` declares `node: ^24.0.0`)
 - npm
 - .NET SDK 10.x (.NET 10.0.107 or later) ✅ **Updated to .NET 10**
 - Docker and Docker Compose (optional, for containerized local runs)
@@ -142,8 +151,8 @@ The application is deployable to **Azure Kubernetes Service (AKS)**. Images are 
 These are deliberate trade‑offs, not shortcuts.
 
 - **SQLite forces a single API replica.** A file‑based database on a `ReadWriteOnce` volume cannot be shared by multiple writers. The API's `Deployment` has `replicas: 1` and a `PodDisruptionBudget` to prevent voluntary disruption during the backup window. The proper fix is Azure SQL or PostgreSQL with a connection string from a Secret, which would unlock horizontal scaling and remove the PVC entirely. That work is documented as follow‑up in the implementation plan.
-- **The Angular client does not call the API.** `MovieService` returns hard‑coded seed data. The cluster therefore has **two** connected services (`mvc-web → web-api`) plus one standalone front end (`angular-client`), not three interconnected services. Wiring Angular to the live API is application feature work and is deliberately outside the deployment plan.
-- **The Web API is internal.** Only `mvc-web` reaches it. CORS in `Program.cs` is hard‑coded to `http://localhost:4200` and a placeholder production origin; if the API is ever exposed publicly, that list must move to configuration first.
+- **The Angular client calls the API but is not wired to the live contract yet.** `MovieService` is an HTTP client, but it targets `/api/v1/movies` while the API's route is the singular `/api/v1/Movie`, and it expects PascalCase while the API emits camelCase. Until that is corrected the Angular screens load no data. `mvc-web` is the client that currently works against the live API. Fixing the Angular client is application work and is deliberately outside the deployment plan.
+- **The Web API is internal.** Only `mvc-web` reaches it. CORS origins come from `Cors:AllowedOrigins` in configuration (they are no longer hard-coded), and the API refuses to start in Production if the list still contains a placeholder origin. If the API is ever exposed publicly, that list must be set for the real domain first.
 
 ### Configuration and secrets
 
@@ -156,7 +165,14 @@ These are deliberate trade‑offs, not shortcuts.
 - All three containers run as non‑root with `readOnlyRootFilesystem: true`, `allowPrivilegeEscalation: false`, and `capabilities.drop: [ALL]`.
 - The ACR pull is via managed identity; no long‑lived registry credentials exist in the cluster.
 - Web API image carries the same security middleware stack as production (`SecurityHeadersMiddleware`, `ExceptionHandlingMiddleware`, `RateLimitingMiddleware`, JWT + refresh tokens, GUID resource IDs, audit logging).
-- Two known‑vulnerability packages were bumped before the first image push: `AutoMapper` 14.0.0 → 14.0.1+ ([GHSA-rvv3-g6hj-g44x](https://github.com/advisories/GHSA-rvv3-g6hj-g44x)) and `SQLitePCLRaw.lib.e_sqlite3` 2.1.11 → 2.2.0+ ([GHSA-2m69-gcr7-jv3q](https://github.com/advisories/GHSA-2m69-gcr7-jv3q)).
+- `AutoMapper` was raised to **16.2.0** (it was 14.0.0 when
+  [GHSA-rvv3-g6hj-g44x](https://github.com/advisories/GHSA-rvv3-g6hj-g44x) was
+  open). **`SQLitePCLRaw.lib.e_sqlite3` is still on 2.1.11** and still carries
+  the high‑severity advisory
+  [GHSA-2m69-gcr7-jv3q](https://github.com/advisories/GHSA-2m69-gcr7-jv3q) —
+  it is a transitive dependency of `Microsoft.EntityFrameworkCore.Sqlite`
+  10.0.0 and is **not yet** bumped. The NU1903 warning appears on every build
+  until it is. See [G21](docs/PROJECT-STATUS.md).
 
 ### Local validation
 
@@ -203,6 +219,20 @@ The AKS control plane dominates at Standard tier ($73/month). Use Standard only 
 
 ---
 
+## Tracked Work
+
+The open defects found while verifying the API contract are tracked as
+**10 GitHub issues** under the milestone
+[`4.2.0 - API contract and client correctness`](https://github.com/andreak3779/MoviesApp/milestone/1):
+
+| Area | Issues |
+| --- | --- |
+| Angular — make the UI load live data | [#14](https://github.com/andreak3779/MoviesApp/issues/14) route, [#15](https://github.com/andreak3779/MoviesApp/issues/15) casing, [#16](https://github.com/andreak3779/MoviesApp/issues/16) token refresh, [#17](https://github.com/andreak3779/MoviesApp/issues/17) 401 handling |
+| Web API — fix the repository defects | [#18](https://github.com/andreak3779/MoviesApp/issues/18) POST 500, [#19](https://github.com/andreak3779/MoviesApp/issues/19) PUT data loss, [#20](https://github.com/andreak3779/MoviesApp/issues/20) GET formats |
+| Tests and hardening | [#21](https://github.com/andreak3779/MoviesApp/issues/21) integration tests, [#22](https://github.com/andreak3779/MoviesApp/issues/22) paginator, [#23](https://github.com/andreak3779/MoviesApp/issues/23) audit logging |
+
+See [PROJECT-STATUS.md](docs/PROJECT-STATUS.md) for the full analysis behind each one.
+
 ## Contributor Workflow
 
 Use the monorepo runbook for branch strategy, subtree imports, and gate checks:
@@ -211,11 +241,20 @@ Use the monorepo runbook for branch strategy, subtree imports, and gate checks:
 
 ## Related Documentation
 
-- `docs/ARCHITECTURE.md`
-- `docs/CI-CD.md`
-- `docs/SECURITY-OVERVIEW.md`
-- `docs/PROJECT-STATUS.md`
-- `docs/KUBERNETES-PLAN.md` and `docs/k8s/IMPLEMENTATION-PLAN.md`
-- `docs/k8s/INTERVIEW-PREP.md`
-- `docs/moviesapp-diagram.mmd`
-- `AGENTS.md`
+| Document | What it covers |
+| --- | --- |
+| [`docs/PROJECT-STATUS.md`](docs/PROJECT-STATUS.md) | **Start here.** Verified current state of all three apps, the open gaps (G1-G36), and prioritised recommendations. |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | System shape, the verified API contract, middleware order, and the component diagram. |
+| [`docs/moviesapp-diagram.mmd`](docs/moviesapp-diagram.mmd) | Mermaid source for the architecture diagram (26 nodes, 33 edges). |
+| [`docs/CI-CD.md`](docs/CI-CD.md) | All four GitHub Actions workflows, change-detection filters, and expected results. |
+| [`docs/SECURITY-OVERVIEW.md`](docs/SECURITY-OVERVIEW.md) | What the API actually enforces, and where it falls short. |
+| [`docs/SECRETS-MANAGEMENT.md`](docs/SECRETS-MANAGEMENT.md) | Where secrets live, how they are supplied, and how leaks are handled. |
+| [`docs/CONTRIBUTING-RUNBOOK.md`](docs/CONTRIBUTING-RUNBOOK.md) | Branch strategy, gate checks, and expected test results. |
+| [`docs/KUBERNETES-PLAN.md`](docs/KUBERNETES-PLAN.md) | Deployment design, constraints, and cost model. |
+| [`docs/k8s/IMPLEMENTATION-PLAN.md`](docs/k8s/IMPLEMENTATION-PLAN.md) | Phased Kubernetes rollout. |
+| [`docs/k8s/PHASE-0-CHECKLIST.md`](docs/k8s/PHASE-0-CHECKLIST.md) | Pre-cloud contract-fix checklist, with per-item status. |
+| [`AGENTS.md`](AGENTS.md) | Conventions for AI coding agents working in this repository. |
+
+Per-app documentation lives with the app: [`apps/angular-client/README.md`](apps/angular-client/README.md),
+[`apps/mvc-web/README.md`](apps/mvc-web/README.md),
+[`apps/web-api/README.md`](apps/web-api/README.md).

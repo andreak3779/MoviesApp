@@ -1,10 +1,10 @@
 import { createEntityAdapter, EntityAdapter, EntityState } from '@ngrx/entity';
 import { createReducer, on } from '@ngrx/store';
-import { Movie } from '../../../models/movie';
+import { Movie } from '../../models/movie';
 import { MovieActions } from './movies.actions';
 
 export interface MoviesState extends EntityState<Movie> {
-  selectedId: number | null;
+  selectedId: string | null;
   loading: boolean;
   error: string | null;
 }

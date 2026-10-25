@@ -52,7 +52,7 @@ The MoviesApp project implements comprehensive security measures following indus
 - ✅ HTTPS enforced in production
 - ✅ Swagger disabled in production
 
-**Documentation:** See `apps/web-api/IMPLEMENTATION-COMPLETE-SUMMARY.md`
+**Documentation:** See `apps/web-api/docs/plans/IMPLEMENTATION-COMPLETE-SUMMARY.md`
 
 ---
 
@@ -60,11 +60,13 @@ The MoviesApp project implements comprehensive security measures following indus
 
 #### Security Measures
 - ✅ Angular's built-in XSS protection
-- ✅ HttpInterceptor for JWT token management
-- ✅ Route guards for protected routes
-- ✅ Input sanitization in forms
-- ✅ CSRF protection ready
-- ✅ Secure token storage (memory, not localStorage)
+- ✅ `authInterceptor` for JWT token management
+- ✅ `authGuard` (`canMatch`) on every protected route
+- ✅ Reactive Forms with validators
+- ✅ Tokens in `sessionStorage`, not `localStorage` — cleared when the tab closes
+- ⚠️ **No automatic token refresh** — `AuthService.refresh()` exists but nothing calls it, so a session ends after the 15-minute access-token lifetime
+- ⚠️ **`errorInterceptor` clears `sessionStorage` directly** rather than calling `AuthService.clear()`, so the in-memory token signal stays set and the guard does not bounce the user to `/login`
+- ⚠️ **Refresh token is in `sessionStorage`** — same-origin script access can read it. A `SameSite=Strict` cookie would be the stronger option.
 
 #### Best Practices
 - Content Security Policy headers
@@ -81,10 +83,15 @@ The MoviesApp project implements comprehensive security measures following indus
 
 #### Security Measures
 - ✅ ASP.NET Core built-in protections
-- ✅ Anti-forgery tokens for forms
+- ✅ Anti-forgery tokens on every form (`[ValidateAntiForgeryToken]`)
 - ✅ Model validation
-- ✅ Secure session management
-- ✅ SQL injection protection via EF Core
+- ✅ Server-side session for the API tokens — the JWT and refresh token are **never** exposed to the browser
+- ✅ Cookie authentication (`HttpOnly`, `SameSite=Lax`) records only that the browser is signed in
+- ✅ The access token is refreshed automatically shortly before it expires (`MovieSession`)
+- ✅ `ApiTokenHandler` attaches `Authorization: Bearer <token>` to every upstream request
+- ✅ The bearer token is never attached to `/auth/login`, `/auth/register` or `/auth/refresh`, so a stale token cannot poison the login flow
+- ✅ `Program.cs` validates `MoviesApi:BaseUrl` at startup and refuses to run without the `/api/v1` prefix
+- ✅ SQL injection protection via EF Core (no raw SQL in the app)
 
 ---
 
@@ -117,7 +124,7 @@ The MoviesApp project implements comprehensive security measures following indus
        │   Client    │ Store token in memory
        └──────┬──────┘
               │
-              │ GET /api/v1/movies
+              │ GET /api/v1/Movie
               │ Authorization: Bearer {token}
               ▼
 ┌─────────────────────────────────┐
@@ -325,7 +332,7 @@ Track these metrics for security monitoring:
 - `apps/web-api/docs/plans/OWASP-TOP10-COMPLIANCE-PLAN.md`
 - `apps/web-api/docs/plans/OWASP-IMPLEMENTATION-PROGRESS.md`
 - `apps/web-api/SECURE-CONFIGURATION-GUIDE.md`
-- `apps/web-api/IMPLEMENTATION-COMPLETE-SUMMARY.md`
+- `apps/web-api/docs/plans/IMPLEMENTATION-COMPLETE-SUMMARY.md`
 
 ---
 

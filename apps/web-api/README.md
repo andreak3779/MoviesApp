@@ -4,6 +4,18 @@
 
 Secure, production-ready ASP.NET Core Web API for managing movie collections with full OWASP Top 10 API Security compliance.
 
+> **Route casing — the one thing to get right.** The movie controller is
+> named `MovieController`, so the movie route is the **singular**
+> `/api/v1/Movie`. `/api/v1/movies` and `/api/v1/Movies` both return **404**.
+> The lookup controllers are plural (`/api/v1/filmGenres`,
+> `/api/v1/mediaTypes`, `/api/v1/formats`) and are matched
+> case-insensitively. All JSON is camelCase.
+>
+> **Known defects** (see [docs/PROJECT-STATUS.md](../../docs/PROJECT-STATUS.md)):
+> `POST` with a `formatId` returns 500, `PUT` silently drops several fields,
+> and the single-movie `GET` returns empty `formats`. Two of these are on the
+> update path and affect every client.
+
 ## 🏗️ Architecture
 
 This solution follows **Clean Architecture** principles with clear separation of concerns:
@@ -119,6 +131,10 @@ Content-Type: application/json
 - At least one uppercase letter
 - At least one lowercase letter
 - At least one number
+- At least one non-alphanumeric character (symbol)
+
+Lockout: 5 failed attempts triggers a 15-minute lockout; the counter resets
+after a successful sign-in.
 
 ### Login
 
@@ -184,7 +200,7 @@ All movie endpoints require authentication. Users can only access their own movi
 ### Get All Movies (Paginated)
 
 ```bash
-GET /api/v1/movies?pageNumber=1&pageSize=20
+GET /api/v1/Movie?pageNumber=1&pageSize=20
 Authorization: Bearer YOUR_TOKEN
 ```
 
@@ -204,14 +220,14 @@ Authorization: Bearer YOUR_TOKEN
 ### Get Movie by ID
 
 ```bash
-GET /api/v1/movies/{guid}
+GET /api/v1/Movie/{guid}
 Authorization: Bearer YOUR_TOKEN
 ```
 
 ### Create Movie
 
 ```bash
-POST /api/v1/movies
+POST /api/v1/Movie
 Authorization: Bearer YOUR_TOKEN
 Content-Type: application/json
 
@@ -226,7 +242,7 @@ Content-Type: application/json
 ### Update Movie
 
 ```bash
-PUT /api/v1/movies/{guid}
+PUT /api/v1/Movie/{guid}
 Authorization: Bearer YOUR_TOKEN
 Content-Type: application/json
 
@@ -239,7 +255,7 @@ Content-Type: application/json
 ### Delete Movie
 
 ```bash
-DELETE /api/v1/movies/{guid}
+DELETE /api/v1/Movie/{guid}
 Authorization: Bearer YOUR_TOKEN
 ```
 

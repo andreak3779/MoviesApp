@@ -160,7 +160,12 @@ dotnet ef database update \
 - **MoviesApi.Tests** - Unit and integration tests
 
 ## API Versioning
-Uses URL path versioning: `/api/v1/movies`, `/api/v2/movies`, etc.
+Uses URL path versioning: `/api/v1/Movie`, `/api/v2/Movie`, etc.
+
+> **Note on route casing.** The movie controller is named `MovieController`, so
+> the route is the **singular** `/api/v1/Movie`. `/api/v1/movies` returns
+> 404. Lookup controllers are plural (`/api/v1/filmGenres`,
+> `/api/v1/mediaTypes`, `/api/v1/formats`) and are matched case-insensitively.
 
 ## Security Features
 - JWT Bearer authentication
@@ -174,22 +179,60 @@ Uses URL path versioning: `/api/v1/movies`, `/api/v2/movies`, etc.
 
 ## API Endpoints
 
-The following endpoints are available:
+The following endpoints are available (all under the `/api/v1` prefix):
 
-- `GET /movies` - Retrieve a list of all movies.
-- `GET /movies/{id}` - Retrieve a specific movie by ID.
-- `POST /movies` - Add a new movie to the collection.
-- `PUT /movies/{id}` - Update an existing movie.
-- `DELETE /movies/{id}` - Remove a movie from the collection.
+- `POST /api/v1/auth/register` - Create an account.
+- `POST /api/v1/auth/login` - Exchange credentials for tokens.
+- `POST /api/v1/auth/refresh` - Exchange a refresh token for a new access token.
+- `POST /api/v1/auth/logout` - Revoke a refresh token.
+- `GET /api/v1/auth/me` - Current user information.
+- `GET /api/v1/Movie` - Page the caller's movies. Optional query parameters:
+  `search`, `genre`, `mediaType`, `format`, `sortBy` (`title` | `year`),
+  `sortDir` (`asc` | `desc`), `pageNumber`, `pageSize`.
+- `GET /api/v1/Movie/{id:guid}` - Retrieve a specific movie by GUID.
+- `POST /api/v1/Movie` - Add a new movie to the collection.
+- `PUT /api/v1/Movie/{id:guid}` - Update an existing movie.
+- `DELETE /api/v1/Movie/{id:guid}` - Remove a movie from the collection.
+- `GET /api/v1/filmGenres`, `GET /api/v1/mediaTypes`, `GET /api/v1/formats` - Lookup lists (anonymous reads).
+
+All JSON is serialised in **camelCase**. Movie identifiers are GUIDs.
 
 ### Example Movie Object
 
 ```json
 {
-  "id": 1,
+  "id": "e200a347-9215-439b-b092-0efd9520cfdb",
   "title": "Inception",
-  "genre": "Sci-Fi",
-  "releaseYear": 2010
+  "releaseYear": 2010,
+  "description": "A mind-bending thriller.",
+  "favourite": true,
+  "criterion": true,
+  "criterionNumber": 42,
+  "ownerId": "056e8a6e-1823-401f-a863-cb39beeb2fc3",
+  "createdAt": "2026-10-25T03:01:34.9266608Z",
+  "updatedAt": null,
+  "genre": "Science Fiction",
+  "mediaType": "Blu-Ray",
+  "format": "Movie",
+  "mediaTypes": [],
+  "filmGenres": [],
+  "formats": []
+}
+```
+
+### Example Paged Response
+
+`GET /api/v1/Movie` returns a paged envelope, not a bare array:
+
+```json
+{
+  "items": [],
+  "pageNumber": 1,
+  "pageSize": 20,
+  "totalCount": 0,
+  "totalPages": 0,
+  "hasPrevious": false,
+  "hasNext": false
 }
 ```
 

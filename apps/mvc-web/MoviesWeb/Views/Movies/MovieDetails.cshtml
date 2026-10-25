@@ -1,0 +1,104 @@
+@model MoviesWeb.Models.Movie
+@{
+    ViewData["Title"] = "Movie Details";
+}
+
+<div class="container mt-4">
+    <div class="mb-3">
+        <a asp-controller="Movies" asp-action="Index" class="text-decoration-none">&larr; Back to list</a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <h1 class="h3">@Model.Title</h1>
+
+            <dl class="row">
+                <dt class="col-sm-3">Release year</dt>
+                <dd class="col-sm-9">@Model.ReleaseYear</dd>
+
+                <dt class="col-sm-3">Genre</dt>
+                <dd class="col-sm-9">@(Model.Genre ?? "—")</dd>
+
+                <dt class="col-sm-3">Media type</dt>
+                <dd class="col-sm-9">@(Model.MediaType ?? "—")</dd>
+
+                <dt class="col-sm-3">Format</dt>
+                <dd class="col-sm-9">@(Model.Format ?? "—")</dd>
+
+                @if (Model.Criterion)
+                {
+                    <dt class="col-sm-3">Criterion number</dt>
+                    <dd class="col-sm-9">@Model.CriterionNumber</dd>
+                }
+
+                @if (Model.Favourite)
+                {
+                    <dt class="col-sm-3">Favourite</dt>
+                    <dd class="col-sm-9">★ Yes</dd>
+                }
+
+                <dt class="col-sm-3">Description</dt>
+                <dd class="col-sm-9">@(Model.Description ?? "—")</dd>
+            </dl>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="h6 text-uppercase text-muted">Genres</h2>
+                    @if (Model.FilmGenres.Count == 0)
+                    {
+                        <p class="text-muted mb-0">None</p>
+                    }
+                    else
+                    {
+                        <ul class="list-unstyled mb-0">
+                            @foreach (var genre in Model.FilmGenres)
+                            {
+                                <li>@genre.Name</li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h2 class="h6 text-uppercase text-muted">Media types</h2>
+                    @if (Model.MediaTypes.Count == 0)
+                    {
+                        <p class="text-muted mb-0">None</p>
+                    }
+                    else
+                    {
+                        <ul class="list-unstyled mb-0">
+                            @foreach (var mediaType in Model.MediaTypes)
+                            {
+                                <li>@mediaType.Name</li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h2 class="h6 text-uppercase text-muted">Formats</h2>
+                    @if (Model.Formats.Count == 0)
+                    {
+                        <p class="text-muted mb-0">None</p>
+                    }
+                    else
+                    {
+                        <ul class="list-unstyled mb-0">
+                            @foreach (var format in Model.Formats)
+                            {
+                                <li>@format.Name</li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

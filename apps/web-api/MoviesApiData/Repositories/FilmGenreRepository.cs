@@ -22,4 +22,35 @@ public class FilmGenreRepository : IFilmGenreRepository
     {
         return await _context.FilmGenres.FindAsync(id);
     }
+
+    public async Task<FilmGenre> CreateAsync(FilmGenre filmGenre)
+    {
+        _context.FilmGenres.Add(filmGenre);
+        await _context.SaveChangesAsync();
+        return filmGenre;
+    }
+
+    public async Task<FilmGenre?> UpdateAsync(int id, FilmGenre filmGenre)
+    {
+        var existing = await _context.FilmGenres.FindAsync(id);
+        if (existing == null)
+            return null;
+
+        existing.Name = filmGenre.Name;
+        existing.Description = filmGenre.Description;
+
+        await _context.SaveChangesAsync();
+        return existing;
+    }
+
+    public async Task<bool> DeleteAsync(int id)
+    {
+        var existing = await _context.FilmGenres.FindAsync(id);
+        if (existing == null)
+            return false;
+
+        _context.FilmGenres.Remove(existing);
+        await _context.SaveChangesAsync();
+        return true;
+    }
 }

@@ -7,6 +7,7 @@ public interface IMovieRepository
     Task<IEnumerable<Movie>> GetAllAsync();
     Task<IEnumerable<Movie>> GetAllByUserAsync(string userId);
     Task<(IEnumerable<Movie> Movies, int TotalCount)> GetPagedByUserAsync(string userId, int pageNumber, int pageSize);
+    Task<(IEnumerable<Movie> Movies, int TotalCount)> SearchAsync(string userId, MovieQuery query);
     Task<Movie?> GetByIdAsync(Guid id);
     Task<Movie?> GetByIdWithOwnershipCheckAsync(Guid id, string userId);
     Task<Movie?> CreateAsync(Movie movie);

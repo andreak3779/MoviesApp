@@ -56,6 +56,20 @@ cd /path/to/MoviesApp
 docker compose config
 ```
 
+### Expected results
+
+All three gates must be green before a PR:
+
+| Gate | Expected |
+| --- | --- |
+| Angular | `npm test` -> **26 passed**, 0 failed |
+| MVC | `dotnet test` -> **32 passed**, 0 failed |
+| Web API | `dotnet test` -> **35 passed**, 0 failed |
+
+A `NU1903` warning about `SQLitePCLRaw.lib.e_sqlite3` 2.1.11 on the Web API
+build is expected and does not fail the build. See
+[G21](PROJECT-STATUS.md).
+
 ## Monorepo Import Workflow (git subtree)
 
 Use this process for adding another repository while preserving history.

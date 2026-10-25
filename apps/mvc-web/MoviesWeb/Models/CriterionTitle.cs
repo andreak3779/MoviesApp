@@ -1,15 +1,20 @@
-namespace MoviesWeb.Models
+﻿namespace MoviesWeb.Models
 {
+    using System;
+
+    /// <summary>
+    /// A Criterion Collection entry, mirroring the API's
+    /// <c>Criterion</c> / <c>CriterionNumber</c> fields on a movie.
+    /// </summary>
     public class CriterionTitle : ICriterionTitle
     {
-        public int MovieId { get; set; }
-        public string Description { get; set; }
-        public string TitleNumber { get; set; }
+        /// <inheritdoc />
+        public Guid MovieId { get; set; }
 
-        public CriterionTitle()
-        {
-            Description = string.Empty;
-            TitleNumber = string.Empty;
-        }
+        /// <inheritdoc />
+        public int? TitleNumber { get; set; }
+
+        /// <inheritdoc />
+        public string? Description { get; set; }
     }
 }

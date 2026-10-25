@@ -155,6 +155,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddScoped<IMovieRepository, MovieRepository>();
 builder.Services.AddScoped<IMediaTypeRepository, MediaTypeRepository>();
 builder.Services.AddScoped<IFilmGenreRepository, FilmGenreRepository>();
+builder.Services.AddScoped<IFormatRepository, FormatRepository>();
 
 // Add Auth Service
 builder.Services.AddScoped<IAuthService, AuthService>();

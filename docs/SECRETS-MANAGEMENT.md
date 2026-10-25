@@ -37,6 +37,29 @@ The placeholder text
 sentinel-only. `Program.cs` and `AuthService.cs` will refuse to start the
 API if the configured secret still equals this string.
 
+### Token handling in the MVC app (added 4.1.0)
+
+The MVC web app authenticates against the same API and therefore holds the
+same kind of secret material. Two surfaces are new since 4.0.0:
+
+| Surface | Where | Notes |
+| --- | --- | --- |
+| Access + refresh tokens | `MoviesWeb/Services/MovieSession.cs`, `ApiAuthService.cs` | Held in server-side `ISession` (server memory / distributed cache), **never** in a cookie the browser can read. `MovieSession` refreshes the access token automatically. |
+| Signed session cookie | ASP.NET Core cookie auth | The cookie carries a protected session id only. ASP.NET Core encrypts and signs it with the data-protection key ring. The bearer token itself is *not* in the cookie. |
+| API base URL | `MoviesApi:BaseUrl` | Configuration, not a secret, but it must end in `/api/v1` — the MVC app refuses to start otherwise. |
+
+Rules for this app specifically:
+
+- **Never** put the bearer token into a cookie, a query string, or the HTML.
+  The Razor views read from the service layer, never from `ISession` directly.
+- The data-protection key ring is **not** configured for a shared store, so
+  the session cookie is only valid for the instance that created it. That is
+  acceptable for a single-replica local app; before scaling out, configure
+  `AddDataProtection().PersistKeysToFileSystem(...)` or a Redis/KV backing
+  store and set the same key ring across replicas.
+- The MVC app does **not** have its own JWT signing key. It never signs or
+  verifies tokens; the API is the only issuer and verifier.
+
 ## Detection
 
 The following tools run automatically:

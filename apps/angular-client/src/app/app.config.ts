@@ -1,5 +1,6 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners, isDevMode } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
 import { provideStore } from '@ngrx/store';
 import { provideEffects } from '@ngrx/effects';
@@ -9,6 +10,8 @@ import { provideRouterStore } from '@ngrx/router-store';
 import { routes } from './app.routes';
 import { reducers } from './store';
 import { MovieEffects } from './store/movies/movies.effects';
+import { authInterceptor } from './core/interceptors/auth.interceptor';
+import { errorInterceptor } from './core/interceptors/error.interceptor';
 
 // provideStoreDevtools is gated on isDevMode() so the Redux DevTools hook
 // is not registered in production at all. Combined with the build-time
@@ -22,8 +25,9 @@ const devtoolsProviders = isDevMode()
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes),
+    provideRouter(routes, withComponentInputBinding()),
     provideClientHydration(withEventReplay()),
+    provideHttpClient(withFetch(), withInterceptors([authInterceptor, errorInterceptor])),
     provideStore(reducers),
     provideEffects([MovieEffects]),
     ...devtoolsProviders,

@@ -1,21 +1,36 @@
 import { moviesReducer, initialState, adapter } from './movies.reducer';
 import { MovieActions } from './movies.actions';
-import { Movie } from '../../../models/movie';
-import { MediaType } from '../../../models/media-type';
-import { MovieFormat } from '../../../models/movie-format';
+import { Movie } from '../../models/movie';
 
 const movie1: Movie = {
-  Id: 1, Title: 'The Matrix', Description: '', Genre: 'Sci-Fi',
-  Criterion: false, CriterionNumber: undefined,
-  MovieMediaType: MediaType.BluRay, MovieFormat: MovieFormat.Movie,
-  Year: 1999, Favourite: false,
+  Id: '00000000-0000-0000-0000-000000000001',
+  Title: 'The Matrix',
+  ReleaseYear: 1999,
+  Description: '',
+  Favourite: false,
+  Criterion: false,
+  CriterionNumber: null,
+  OwnerId: 'user-1',
+  CreatedAt: '2026-01-01T00:00:00Z',
+  UpdatedAt: null,
+  Genre: 'Sci-Fi',
+  MediaType: 'Blu-Ray',
+  Format: 'Movie',
+  FilmGenres: [],
+  MediaTypes: [],
+  Formats: [],
 };
 
 const movie2: Movie = {
-  Id: 2, Title: 'Dark', Description: '', Genre: 'Thriller',
-  Criterion: true, CriterionNumber: 1,
-  MovieMediaType: MediaType.UltraHd, MovieFormat: MovieFormat.TVSeries,
-  Year: 2017, Favourite: true,
+  ...movie1,
+  Id: '00000000-0000-0000-0000-000000000002',
+  Title: 'Dark',
+  ReleaseYear: 2017,
+  Genre: 'Thriller',
+  Format: 'TVSeries',
+  Criterion: true,
+  CriterionNumber: 1,
+  Favourite: true,
 };
 
 describe('moviesReducer', () => {
@@ -28,7 +43,7 @@ describe('moviesReducer', () => {
     it('should set loading true and clear error', () => {
       const state = moviesReducer(
         { ...initialState, error: 'previous error' },
-        MovieActions.loadMovies(),
+        MovieActions.loadMovies({}),
       );
       expect(state.loading).toBe(true);
       expect(state.error).toBeNull();
@@ -42,8 +57,8 @@ describe('moviesReducer', () => {
         MovieActions.loadMoviesSuccess({ movies: [movie1, movie2] }),
       );
       expect(loaded.loading).toBe(false);
-      expect(loaded.ids).toEqual([1, 2]);
-      expect(loaded.entities[1]).toEqual(movie1);
+      expect(loaded.ids).toEqual(['00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002']);
+      expect(loaded.entities['00000000-0000-0000-0000-000000000001']).toEqual(movie1);
     });
   });
 
@@ -60,12 +75,12 @@ describe('moviesReducer', () => {
 
   describe('selectMovie / clearSelectedMovie', () => {
     it('should set selectedId', () => {
-      const state = moviesReducer(initialState, MovieActions.selectMovie({ id: 2 }));
-      expect(state.selectedId).toBe(2);
+      const state = moviesReducer(initialState, MovieActions.selectMovie({ id: '00000000-0000-0000-0000-000000000002' }));
+      expect(state.selectedId).toBe('00000000-0000-0000-0000-000000000002');
     });
 
     it('should clear selectedId', () => {
-      const withSelection = moviesReducer(initialState, MovieActions.selectMovie({ id: 2 }));
+      const withSelection = moviesReducer(initialState, MovieActions.selectMovie({ id: '00000000-0000-0000-0000-000000000002' }));
       const cleared = moviesReducer(withSelection, MovieActions.clearSelectedMovie());
       expect(cleared.selectedId).toBeNull();
     });
@@ -77,8 +92,8 @@ describe('moviesReducer', () => {
         initialState,
         MovieActions.addMovieSuccess({ movie: movie1 }),
       );
-      expect(state.ids).toContain(1);
-      expect(state.entities[1]).toEqual(movie1);
+      expect(state.ids).toContain('00000000-0000-0000-0000-000000000001');
+      expect(state.entities['00000000-0000-0000-0000-000000000001']).toEqual(movie1);
     });
   });
 
@@ -90,7 +105,7 @@ describe('moviesReducer', () => {
         withMovie,
         MovieActions.updateMovieSuccess({ movie: updated }),
       );
-      expect(state.entities[1]!.Title).toBe('The Matrix Reloaded');
+      expect(state.entities['00000000-0000-0000-0000-000000000001']!.Title).toBe('The Matrix Reloaded');
     });
   });
 
@@ -99,10 +114,10 @@ describe('moviesReducer', () => {
       const withMovies = adapter.setAll([movie1, movie2], initialState);
       const state = moviesReducer(
         withMovies,
-        MovieActions.removeMovieSuccess({ id: 1 }),
+        MovieActions.removeMovieSuccess({ id: '00000000-0000-0000-0000-000000000001' }),
       );
-      expect(state.ids).not.toContain(1);
-      expect(state.ids).toContain(2);
+      expect(state.ids).not.toContain('00000000-0000-0000-0000-000000000001');
+      expect(state.ids).toContain('00000000-0000-0000-0000-000000000002');
     });
   });
 });

@@ -59,10 +59,10 @@ public class MovieControllerTests
                 }
             }
         };
-        _mockRepository.Setup(r => r.GetPagedByUserAsync(_testUserId, 1, 20))
+        _mockRepository.Setup(r => r.SearchAsync(_testUserId, It.IsAny<MovieQuery>()))
             .ReturnsAsync((movies, movies.Count));
 
-        var result = await _controller.GetAll(new PaginationParameters { PageNumber = 1, PageSize = 20 });
+        var result = await _controller.GetAll(new MovieQuery { PageNumber = 1, PageSize = 20 });
 
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var pagedResponse = Assert.IsType<PagedResponse<MovieResponseDto>>(okResult.Value);
@@ -220,7 +220,7 @@ public class MovieControllerTests
     {
         var movieId = Guid.NewGuid();
         var userId = Guid.NewGuid().ToString();
-        _mockRepository.Setup(r => r.DeleteAsync(movieId)).ReturnsAsync(false);
+        _mockRepository.Setup(r => r.DeleteWithOwnershipCheckAsync(movieId, It.IsAny<string>())).ReturnsAsync(false);
 
         var deleteResult = await _controller.Delete(movieId);
 

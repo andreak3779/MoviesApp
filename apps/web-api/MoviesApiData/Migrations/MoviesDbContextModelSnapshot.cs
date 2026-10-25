@@ -15,7 +15,7 @@ namespace MoviesApiData.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.8");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
@@ -145,7 +145,7 @@ namespace MoviesApiData.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("MoviesApi.Models.ApplicationUser", b =>
+            modelBuilder.Entity("MoviesApiDomain.Models.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("TEXT");
@@ -218,7 +218,7 @@ namespace MoviesApiData.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("MoviesApi.Models.AuditLog", b =>
+            modelBuilder.Entity("MoviesApiDomain.Models.AuditLog", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -276,7 +276,7 @@ namespace MoviesApiData.Migrations
                     b.ToTable("AuditLogs", (string)null);
                 });
 
-            modelBuilder.Entity("MoviesApi.Models.FilmGenre", b =>
+            modelBuilder.Entity("MoviesApiDomain.Models.FilmGenre", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -379,7 +379,50 @@ namespace MoviesApiData.Migrations
                         });
                 });
 
-            modelBuilder.Entity("MoviesApi.Models.MediaType", b =>
+            modelBuilder.Entity("MoviesApiDomain.Models.Format", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Formats", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Description = "Standalone feature film",
+                            Name = "Movie"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Description = "Multi-episode series",
+                            Name = "TVSeries"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Description = "Bundled multi-title collection",
+                            Name = "BoxSet"
+                        });
+                });
+
+            modelBuilder.Entity("MoviesApiDomain.Models.MediaType", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -446,7 +489,7 @@ namespace MoviesApiData.Migrations
                         });
                 });
 
-            modelBuilder.Entity("MoviesApi.Models.Movie", b =>
+            modelBuilder.Entity("MoviesApiDomain.Models.Movie", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -454,6 +497,23 @@ namespace MoviesApiData.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("Criterion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
+                    b.Property<int?>("CriterionNumber")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Favourite")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("OwnerId")
                         .IsRequired()
@@ -477,7 +537,7 @@ namespace MoviesApiData.Migrations
                     b.ToTable("Movies", (string)null);
                 });
 
-            modelBuilder.Entity("MoviesApi.Models.MovieFilmGenre", b =>
+            modelBuilder.Entity("MoviesApiDomain.Models.MovieFilmGenre", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -499,7 +559,29 @@ namespace MoviesApiData.Migrations
                     b.ToTable("MovieFilmGenres", (string)null);
                 });
 
-            modelBuilder.Entity("MoviesApi.Models.MovieMediaType", b =>
+            modelBuilder.Entity("MoviesApiDomain.Models.MovieFormat", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("FormatId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("MovieId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FormatId");
+
+                    b.HasIndex("MovieId", "FormatId")
+                        .IsUnique();
+
+                    b.ToTable("MovieFormats", (string)null);
+                });
+
+            modelBuilder.Entity("MoviesApiDomain.Models.MovieMediaType", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -521,11 +603,21 @@ namespace MoviesApiData.Migrations
                     b.ToTable("MovieMediaTypes", (string)null);
                 });
 
-            modelBuilder.Entity("MoviesApi.Models.RefreshToken", b =>
+            modelBuilder.Entity("MoviesApiDomain.Models.RefreshToken", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("AccessTokenJti")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Consumed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("ConsumedAt")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
@@ -547,9 +639,11 @@ namespace MoviesApiData.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("Token");
 
-                    b.ToTable("RefreshTokens");
+                    b.HasIndex("UserId", "Consumed");
+
+                    b.ToTable("RefreshTokens", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -563,7 +657,7 @@ namespace MoviesApiData.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("MoviesApi.Models.ApplicationUser", null)
+                    b.HasOne("MoviesApiDomain.Models.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -572,7 +666,7 @@ namespace MoviesApiData.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("MoviesApi.Models.ApplicationUser", null)
+                    b.HasOne("MoviesApiDomain.Models.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -587,7 +681,7 @@ namespace MoviesApiData.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("MoviesApi.Models.ApplicationUser", null)
+                    b.HasOne("MoviesApiDomain.Models.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -596,16 +690,16 @@ namespace MoviesApiData.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("MoviesApi.Models.ApplicationUser", null)
+                    b.HasOne("MoviesApiDomain.Models.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("MoviesApi.Models.AuditLog", b =>
+            modelBuilder.Entity("MoviesApiDomain.Models.AuditLog", b =>
                 {
-                    b.HasOne("MoviesApi.Models.ApplicationUser", "User")
+                    b.HasOne("MoviesApiDomain.Models.ApplicationUser", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -614,9 +708,9 @@ namespace MoviesApiData.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("MoviesApi.Models.Movie", b =>
+            modelBuilder.Entity("MoviesApiDomain.Models.Movie", b =>
                 {
-                    b.HasOne("MoviesApi.Models.ApplicationUser", "Owner")
+                    b.HasOne("MoviesApiDomain.Models.ApplicationUser", "Owner")
                         .WithMany()
                         .HasForeignKey("OwnerId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -625,15 +719,15 @@ namespace MoviesApiData.Migrations
                     b.Navigation("Owner");
                 });
 
-            modelBuilder.Entity("MoviesApi.Models.MovieFilmGenre", b =>
+            modelBuilder.Entity("MoviesApiDomain.Models.MovieFilmGenre", b =>
                 {
-                    b.HasOne("MoviesApi.Models.FilmGenre", "FilmGenre")
+                    b.HasOne("MoviesApiDomain.Models.FilmGenre", "FilmGenre")
                         .WithMany("MovieFilmGenres")
                         .HasForeignKey("FilmGenreId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("MoviesApi.Models.Movie", "Movie")
+                    b.HasOne("MoviesApiDomain.Models.Movie", "Movie")
                         .WithMany("MovieFilmGenres")
                         .HasForeignKey("MovieId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -644,15 +738,34 @@ namespace MoviesApiData.Migrations
                     b.Navigation("Movie");
                 });
 
-            modelBuilder.Entity("MoviesApi.Models.MovieMediaType", b =>
+            modelBuilder.Entity("MoviesApiDomain.Models.MovieFormat", b =>
                 {
-                    b.HasOne("MoviesApi.Models.MediaType", "MediaType")
+                    b.HasOne("MoviesApiDomain.Models.Format", "Format")
+                        .WithMany("MovieFormats")
+                        .HasForeignKey("FormatId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MoviesApiDomain.Models.Movie", "Movie")
+                        .WithMany("MovieFormats")
+                        .HasForeignKey("MovieId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Format");
+
+                    b.Navigation("Movie");
+                });
+
+            modelBuilder.Entity("MoviesApiDomain.Models.MovieMediaType", b =>
+                {
+                    b.HasOne("MoviesApiDomain.Models.MediaType", "MediaType")
                         .WithMany("MovieMediaTypes")
                         .HasForeignKey("MediaTypeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("MoviesApi.Models.Movie", "Movie")
+                    b.HasOne("MoviesApiDomain.Models.Movie", "Movie")
                         .WithMany("MovieMediaTypes")
                         .HasForeignKey("MovieId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -663,9 +776,9 @@ namespace MoviesApiData.Migrations
                     b.Navigation("Movie");
                 });
 
-            modelBuilder.Entity("MoviesApi.Models.RefreshToken", b =>
+            modelBuilder.Entity("MoviesApiDomain.Models.RefreshToken", b =>
                 {
-                    b.HasOne("MoviesApi.Models.ApplicationUser", "User")
+                    b.HasOne("MoviesApiDomain.Models.ApplicationUser", "User")
                         .WithMany("RefreshTokens")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -674,24 +787,31 @@ namespace MoviesApiData.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("MoviesApi.Models.ApplicationUser", b =>
+            modelBuilder.Entity("MoviesApiDomain.Models.ApplicationUser", b =>
                 {
                     b.Navigation("RefreshTokens");
                 });
 
-            modelBuilder.Entity("MoviesApi.Models.FilmGenre", b =>
+            modelBuilder.Entity("MoviesApiDomain.Models.FilmGenre", b =>
                 {
                     b.Navigation("MovieFilmGenres");
                 });
 
-            modelBuilder.Entity("MoviesApi.Models.MediaType", b =>
+            modelBuilder.Entity("MoviesApiDomain.Models.Format", b =>
+                {
+                    b.Navigation("MovieFormats");
+                });
+
+            modelBuilder.Entity("MoviesApiDomain.Models.MediaType", b =>
                 {
                     b.Navigation("MovieMediaTypes");
                 });
 
-            modelBuilder.Entity("MoviesApi.Models.Movie", b =>
+            modelBuilder.Entity("MoviesApiDomain.Models.Movie", b =>
                 {
                     b.Navigation("MovieFilmGenres");
+
+                    b.Navigation("MovieFormats");
 
                     b.Navigation("MovieMediaTypes");
                 });

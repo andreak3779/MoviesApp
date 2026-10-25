@@ -6,9 +6,39 @@ MoviesWeb is a small ASP.NET Core web application (Razor Pages / MVC mixed layou
 
 **Skills demonstrated:** ASP.NET Core, Razor Pages, MVC, C#, web application architecture
 
-*Note: This is a demonstration project and not intended for production use.*
-
 **Project:** MoviesWeb
+
+MoviesWeb is the server-rendered front end for the MoviesApp Web API. It signs
+in against the API's `/api/v1/auth` endpoints, stores the issued JWT in the
+server-side session, and attaches it to every upstream request.
+
+## How it talks to the Web API
+
+| Concern | Detail |
+| --- | --- |
+| Base address | `MoviesApi:BaseUrl` — must include the `/api/v1` prefix, e.g. `http://localhost:8081/api/v1` |
+| Movie routes | `/api/v1/Movie` (singular — the API's controller is `MovieController`) |
+| Identifiers | GUIDs, not integers |
+| Wire format | camelCase JSON; the list endpoint returns a paged envelope (`items`, `totalCount`, `hasNext`, ...) |
+| Auth | `Authorization: Bearer <token>` attached by `ApiTokenHandler` from the session |
+| Sessions | ASP.NET Core session for the API tokens, cookie auth for the browser |
+
+### Running against the API
+
+```bash
+# 1. Start the Web API (it needs a real JWT secret)
+cd ../web-api/MoviesApi
+dotnet user-secrets set "JwtSettings:SecretKey" "$(openssl rand -base64 48)"
+dotnet run
+
+# 2. Start this app pointed at it
+cd ../../mvc-web
+MoviesApi__BaseUrl=http://localhost:8081/api/v1 dotnet run --project MoviesWeb/MoviesWeb.csproj
+```
+
+Then sign in at `/Account/Login` with an account registered through
+`POST /api/v1/auth/register`. Note that the API requires passwords containing
+an uppercase letter, a lowercase letter, a digit **and** a symbol.
 
 ## Prerequisites
 
@@ -35,10 +65,16 @@ dotnet publish MoviesWeb/MoviesWeb.csproj -c Release -o out
 ## Project structure (key files)
 
 - MoviesWeb/MoviesWeb.csproj - project file
-- MoviesWeb/Program.cs - application entry
-- MoviesWeb/Controllers/MovieController.cs - controller for movie pages
-- MoviesWeb/Models/ - domain models (`Movie.cs`, `User.cs`, etc.)
-- MoviesWeb/Pages, MoviesWeb/Views - Razor views and pages
+- MoviesWeb/Program.cs - application entry (DI, session, cookie auth)
+- MoviesWeb/Controllers/AccountController.cs - sign in / sign out against the API
+- MoviesWeb/Controllers/MoviesController.cs - movie list and details pages
+- MoviesWeb/Services/MoviesService.cs - HTTP client for `/api/v1/Movie`
+- MoviesWeb/Services/ApiAuthService.cs - HTTP client for `/api/v1/auth`
+- MoviesWeb/Services/ApiTokenHandler.cs - attaches the bearer token
+- MoviesWeb/Services/MovieSession.cs - stores and refreshes the API tokens
+- MoviesWeb/Models/ - models mirroring the API's DTOs
+- MoviesWeb/ViewModels/MovieListModel.cs - list view model with paging metadata
+- MoviesWeb/Views - Razor views
 - MoviesWeb/wwwroot - static assets (css, js, lib)
 
 ## Development notes
@@ -48,7 +84,12 @@ dotnet publish MoviesWeb/MoviesWeb.csproj -c Release -o out
 
 ## Tests
 
-No automated tests are included in the repository. Consider adding an xUnit or NUnit test project for unit/integration tests.
+The `MoviesWeb.Tests` project (xUnit + Moq) covers the API client, the
+controller, and query validation:
+
+```bash
+dotnet test MoviesWeb.sln
+```
 
 ## Contributing
 

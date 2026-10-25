@@ -1,4 +1,33 @@
 # MoviesApp
+
+> **This is the original brief.** It is kept verbatim below as the source of
+> truth for *what was asked for*. It has not been rewritten to match the
+> implementation — the gap between it and the code is itself information.
+>
+> **Status as of 2026-10-25** (details in
+> [docs/PROJECT-STATUS.md](docs/PROJECT-STATUS.md)):
+>
+> | Brief item | Status |
+> | --- | --- |
+> | Angular front end with NgRx | **Done** — Angular 22, NgRx 22, standalone components, signals |
+> | Storing the movie collection | **Done** — CRUD against `/api/v1/Movie` |
+> | Updating favourites | **Partial** — the `Favourite` flag is modelled and editable, but there is no favourites *list* endpoint |
+> | Query by title, genre, year | **Done** — `search`, `genre`, `mediaType`, `format`, `sortBy`, `sortDir`, `pageNumber`, `pageSize` |
+> | Query by criterion / criterion number / favourite list | **Not done** |
+> | Movie watch list | **Not done** — no model, endpoint, store slice or component exists |
+> | Movie header component (count, search bar, title) | **Partial** — the list view has a search bar and a total count; there is no separate header component |
+> | Movies list component with paging and a query bar | **Done** — search, three filters, sort, paging |
+> | Standalone components, signals, NgRx effects for all calls | **Done** |
+> | `PATCH` for criterion and favourite | **Not done** — both are updated through `PUT /api/v1/Movie/{id}` |
+> | MovieService returning observables | **Done** |
+> | MongoDB + SQLAlchemy | **Superseded** — the implementation uses EF Core + SQLite on .NET 10 |
+>
+> Note the brief says "Angular 21" and "unique id number". The implementation
+> uses Angular 22 and GUID identifiers, because the Web API issues GUIDs and
+> the brief's own security guidance in `docs/` prefers them over enumerable
+> integers.
+
+# MoviesApp
 The front end uses angular 21
 TypeScript
 State should be managed with NgRx

@@ -6,30 +6,56 @@ import { firstValueFrom } from 'rxjs';
 
 import { MovieEffects } from './movies.effects';
 import { MovieActions } from './movies.actions';
-import { MovieService } from '../../../services/movie-service';
-import { Movie } from '../../../models/movie';
-import { MediaType } from '../../../models/media-type';
-import { MovieFormat } from '../../../models/movie-format';
+import { MovieService } from '../../services/movie-service';
+import { Movie, PagedResponse } from '../../models/movie';
 
 const movie1: Movie = {
-  Id: 1, Title: 'The Matrix', Description: '', Genre: 'Sci-Fi',
-  Criterion: false, CriterionNumber: undefined,
-  MovieMediaType: MediaType.BluRay, MovieFormat: MovieFormat.Movie,
-  Year: 1999, Favourite: false,
+  Id: '00000000-0000-0000-0000-000000000001',
+  Title: 'The Matrix',
+  ReleaseYear: 1999,
+  Description: '',
+  Favourite: false,
+  Criterion: false,
+  CriterionNumber: null,
+  OwnerId: 'user-1',
+  CreatedAt: '2026-01-01T00:00:00Z',
+  UpdatedAt: null,
+  Genre: 'Sci-Fi',
+  MediaType: 'Blu-Ray',
+  Format: 'Movie',
+  FilmGenres: [],
+  MediaTypes: [],
+  Formats: [],
 };
+
+const pagedResponse = (items: Movie[]): PagedResponse<Movie> => ({
+  items,
+  pageNumber: 1,
+  pageSize: 20,
+  totalCount: items.length,
+  totalPages: 1,
+  hasPrevious: false,
+  hasNext: false,
+});
 
 describe('MovieEffects', () => {
   let actions$: Observable<Action>;
   let effects: MovieEffects;
-  let movieService: { [K in keyof MovieService]: ReturnType<typeof vi.fn> };
+  let movieService: {
+    search: ReturnType<typeof vi.fn>;
+    getById: ReturnType<typeof vi.fn>;
+    create: ReturnType<typeof vi.fn>;
+    update: ReturnType<typeof vi.fn>;
+    remove: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     movieService = {
-      getAllMovies: vi.fn(),
-      getMovie: vi.fn(),
-      addMovie: vi.fn(),
-      updateMovie: vi.fn(),
-      removeMovie: vi.fn(),
+      search: vi.fn(),
+      getById: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      remove: vi.fn(),
     };
 
     TestBed.configureTestingModule({
@@ -45,16 +71,16 @@ describe('MovieEffects', () => {
 
   describe('loadMovies$', () => {
     it('should dispatch loadMoviesSuccess with returned movies', async () => {
-      movieService.getAllMovies.mockReturnValue(of({ items: [movie1], total: 1 }));
-      actions$ = of(MovieActions.loadMovies());
+      movieService.search.mockReturnValue(of(pagedResponse([movie1])));
+      actions$ = of(MovieActions.loadMovies({}));
 
       const action = await firstValueFrom(effects.loadMovies$);
       expect(action).toEqual(MovieActions.loadMoviesSuccess({ movies: [movie1] }));
     });
 
     it('should dispatch loadMoviesFailure on service error', async () => {
-      movieService.getAllMovies.mockReturnValue(throwError(() => new Error('Network error')));
-      actions$ = of(MovieActions.loadMovies());
+      movieService.search.mockReturnValue(throwError(() => new Error('Network error')));
+      actions$ = of(MovieActions.loadMovies({}));
 
       const action = await firstValueFrom(effects.loadMovies$);
       expect(action).toEqual(
@@ -65,17 +91,30 @@ describe('MovieEffects', () => {
 
   describe('addMovie$', () => {
     it('should dispatch addMovieSuccess with saved movie', async () => {
-      const newMovie = { ...movie1, Id: undefined as any };
-      movieService.addMovie.mockReturnValue(of(movie1));
-      actions$ = of(MovieActions.addMovie({ movie: newMovie }));
+      movieService.create.mockReturnValue(of(movie1));
+      actions$ = of(MovieActions.addMovie({
+        movie: {
+          Title: 'The Matrix',
+          ReleaseYear: 1999,
+          Favourite: false,
+          Criterion: false,
+        },
+      }));
 
       const action = await firstValueFrom(effects.addMovie$);
       expect(action).toEqual(MovieActions.addMovieSuccess({ movie: movie1 }));
     });
 
     it('should dispatch addMovieFailure on service error', async () => {
-      movieService.addMovie.mockReturnValue(throwError(() => new Error('Save failed')));
-      actions$ = of(MovieActions.addMovie({ movie: movie1 }));
+      movieService.create.mockReturnValue(throwError(() => new Error('Save failed')));
+      actions$ = of(MovieActions.addMovie({
+        movie: {
+          Title: 'The Matrix',
+          ReleaseYear: 1999,
+          Favourite: false,
+          Criterion: false,
+        },
+      }));
 
       const action = await firstValueFrom(effects.addMovie$);
       expect(action).toEqual(
@@ -87,7 +126,7 @@ describe('MovieEffects', () => {
   describe('updateMovie$', () => {
     it('should dispatch updateMovieSuccess with updated movie', async () => {
       const updated = { ...movie1, Title: 'The Matrix Reloaded' };
-      movieService.updateMovie.mockReturnValue(of(updated));
+      movieService.update.mockReturnValue(of(void 0));
       actions$ = of(MovieActions.updateMovie({ movie: updated }));
 
       const action = await firstValueFrom(effects.updateMovie$);
@@ -95,7 +134,7 @@ describe('MovieEffects', () => {
     });
 
     it('should dispatch updateMovieFailure on service error', async () => {
-      movieService.updateMovie.mockReturnValue(throwError(() => new Error('Update failed')));
+      movieService.update.mockReturnValue(throwError(() => new Error('Update failed')));
       actions$ = of(MovieActions.updateMovie({ movie: movie1 }));
 
       const action = await firstValueFrom(effects.updateMovie$);
@@ -107,16 +146,16 @@ describe('MovieEffects', () => {
 
   describe('removeMovie$', () => {
     it('should dispatch removeMovieSuccess with the removed id', async () => {
-      movieService.removeMovie.mockReturnValue(of(void 0));
-      actions$ = of(MovieActions.removeMovie({ id: 1 }));
+      movieService.remove.mockReturnValue(of(void 0));
+      actions$ = of(MovieActions.removeMovie({ id: '00000000-0000-0000-0000-000000000001' }));
 
       const action = await firstValueFrom(effects.removeMovie$);
-      expect(action).toEqual(MovieActions.removeMovieSuccess({ id: 1 }));
+      expect(action).toEqual(MovieActions.removeMovieSuccess({ id: '00000000-0000-0000-0000-000000000001' }));
     });
 
     it('should dispatch removeMovieFailure on service error', async () => {
-      movieService.removeMovie.mockReturnValue(throwError(() => new Error('Delete failed')));
-      actions$ = of(MovieActions.removeMovie({ id: 1 }));
+      movieService.remove.mockReturnValue(throwError(() => new Error('Delete failed')));
+      actions$ = of(MovieActions.removeMovie({ id: '00000000-0000-0000-0000-000000000001' }));
 
       const action = await firstValueFrom(effects.removeMovie$);
       expect(action).toEqual(

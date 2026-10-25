@@ -42,6 +42,8 @@ public class MovieRepository : IMovieRepository
                 .ThenInclude(mm => mm.MediaType)
             .Include(m => m.MovieFilmGenres)
                 .ThenInclude(mf => mf.FilmGenre)
+            .Include(m => m.MovieFormats)
+                .ThenInclude(mf => mf.Format)
             .AsQueryable();
 
         var totalCount = await query.CountAsync();
@@ -49,6 +51,61 @@ public class MovieRepository : IMovieRepository
             .OrderByDescending(m => m.CreatedAt)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
+            .ToListAsync();
+
+        return (movies, totalCount);
+    }
+
+    public async Task<(IEnumerable<Movie> Movies, int TotalCount)> SearchAsync(string userId, MovieQuery q)
+    {
+        IQueryable<Movie> query = _context.Movies
+            .Where(m => m.OwnerId == userId)
+            .Include(m => m.MovieMediaTypes)
+                .ThenInclude(mm => mm.MediaType)
+            .Include(m => m.MovieFilmGenres)
+                .ThenInclude(mf => mf.FilmGenre)
+            .Include(m => m.MovieFormats)
+                .ThenInclude(mf => mf.Format);
+
+        if (!string.IsNullOrWhiteSpace(q.Search))
+        {
+            var term = q.Search.Trim().ToLower();
+            query = query.Where(m => m.Title.ToLower().Contains(term));
+        }
+
+        if (!string.IsNullOrWhiteSpace(q.Genre))
+        {
+            var g = q.Genre;
+            query = query.Where(m => m.MovieFilmGenres.Any(mf => mf.FilmGenre.Name == g));
+        }
+
+        if (!string.IsNullOrWhiteSpace(q.MediaType))
+        {
+            var mt = q.MediaType;
+            query = query.Where(m => m.MovieMediaTypes.Any(mm => mm.MediaType.Name == mt));
+        }
+
+        if (!string.IsNullOrWhiteSpace(q.Format))
+        {
+            var f = q.Format;
+            query = query.Where(m => m.MovieFormats.Any(mf => mf.Format.Name == f));
+        }
+
+        query = (q.SortBy?.ToLowerInvariant(), q.SortDir?.ToLowerInvariant()) switch
+        {
+            ("title", "desc") => query.OrderByDescending(m => m.Title),
+            ("title", _)      => query.OrderBy(m => m.Title),
+            ("year",  "asc")  => query.OrderBy(m => m.ReleaseYear),
+            _                 => query.OrderByDescending(m => m.ReleaseYear),
+        };
+
+        var page = Math.Max(1, q.PageNumber);
+        var size = Math.Clamp(q.PageSize <= 0 ? 20 : q.PageSize, 1, 100);
+
+        var totalCount = await query.CountAsync();
+        var movies = await query
+            .Skip((page - 1) * size)
+            .Take(size)
             .ToListAsync();
 
         return (movies, totalCount);
@@ -117,7 +174,15 @@ public class MovieRepository : IMovieRepository
             existingMovie.MovieFilmGenres.Clear();
             foreach (var mfg in movie.MovieFilmGenres)
             {
-                existingMovie.MovieFilmGenres.Add(mfg);
+                existingMovie.MovieFilmGenres.Add(mfg); 
+            }
+        }
+        if (movie.MovieFormats != null)
+        {
+            existingMovie.MovieFormats.Clear();
+            foreach (var mf in movie.MovieFormats)
+            {
+                existingMovie.MovieFormats.Add(mf);
             }
         }
 

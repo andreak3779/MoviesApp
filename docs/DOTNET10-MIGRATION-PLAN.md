@@ -1,5 +1,11 @@
 # .NET 10 Migration Plan
 
+> **Historical document — do not treat as current state.** This file is kept
+> for the record. The authoritative snapshot of the codebase is
+> [PROJECT-STATUS.md](PROJECT-STATUS.md); the current system shape is in
+> [ARCHITECTURE.md](ARCHITECTURE.md). Where this document disagrees with those
+> two, they are right.
+
 ## Overview
 This document outlines the steps to migrate the MoviesApp to .NET 10, ASP.NET Core 10, C# 10, and EF Core 10.
 

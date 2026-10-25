@@ -303,7 +303,7 @@ ConnectionStrings__DefaultConnection=Data Source=movies.db
 ```bash
 ASPNETCORE_ENVIRONMENT=Development
 ASPNETCORE_URLS=http://+:8080
-MoviesApi__BaseUrl=http://localhost:8081/api/
+MoviesApi__BaseUrl=http://localhost:8081/api/v1
 ```
 
 ---
@@ -367,7 +367,7 @@ dotnet user-secrets clear
 - [.NET 10 Documentation](https://docs.microsoft.com/dotnet/core/whats-new/dotnet-10)
 - [ASP.NET Core 10](https://docs.microsoft.com/aspnet/core/)
 - [EF Core 10](https://docs.microsoft.com/ef/core/)
-- [Migration Summary](docs/DOTNET10-MIGRATION-SUMMARY.md)
+- [Migration Summary](DOTNET10-MIGRATION-SUMMARY.md)
 
 ### Community
 - [Stack Overflow - .NET](https://stackoverflow.com/questions/tagged/.net)

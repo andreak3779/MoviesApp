@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
 <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>MoviesApi</RootNamespace>
     <AssemblyName>MoviesApi</AssemblyName>
+    <UserSecretsId>98093ef9-6027-4ae2-9ef8-5c7017fab1f1</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\MoviesApiData\MoviesApiData.csproj" />

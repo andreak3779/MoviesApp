@@ -1,34 +1,87 @@
 graph LR
-  subgraph Client
-    App[App (src/app/app.ts)]
-    Header[MovieHeader]
-    List[MoviesList]
-    Watch[MovieWatchList]
+  subgraph Client["Angular Client (apps/angular-client)"]
+    App["App<br/>app.ts<br/>(shell + router-outlet)"]
+    Sidebar["SidebarComponent<br/>features/chrome/"]
+    Login["LoginComponent<br/>core/auth/"]
+    MoviesList["MoviesListComponent<br/>features/movies/"]
+    MovieForm["MovieFormComponent<br/>features/movies/"]
+    LookupList["LookupListComponent<br/>features/lookups/"]
+    LookupForm["LookupFormComponent<br/>features/lookups/"]
+    Confirm["DeleteConfirmationComponent<br/>features/shared/"]
   end
 
-  subgraph NgRx
-    Store[NgRx Store / Effects]
+  subgraph NgRx["NgRx Store (store/)"]
+    Store["moviesReducer<br/>EntityAdapter state"]
+    Effects["MovieEffects"]
   end
 
-  Service[MovieService<br/>(apps/angular-client/src/services/movie-service.ts)]
-  WatchService[MovieWatchListService]
-  Models[Models<br/>(Movie, MediaType, MovieFormat)]
-  Server[SSR Server<br/>(src/server.ts, main.server.ts)]
-  Public[Public Assets<br/>(public/)]
+  subgraph Core["Client Core (core/)"]
+    AuthSvc["AuthService<br/>services/auth.service.ts"]
+    AuthInt["authInterceptor"]
+    ErrInt["errorInterceptor"]
+    Guard["authGuard (canMatch)"]
+    LookupSvc["LookupService<br/>services/lookup.service.ts"]
+  end
 
-  App --> Header
-  App --> List
-  App --> Watch
+  subgraph Services["Services"]
+    MovieSvc["MovieService<br/>services/movie-service.ts"]
+    LookupAdmin["LookupAdminService<br/>features/lookups/lookup.service.ts"]
+  end
 
-  Header -->|dispatch| Store
-  List -->|dispatch| Store
-  Watch -->|dispatch| Store
+  subgraph Api["Web API (apps/web-api)"]
+    AuthCtrl["AuthController<br/>/api/v1/auth"]
+    MovieCtrl["MovieController<br/>/api/v1/Movie"]
+    LookupCtrl["FilmGenres / MediaTypes / Formats<br/>/api/v1/*"]
+  end
 
-  Store -->|effects -> calls| Service
-  Store -->|effects -> calls| WatchService
+  subgraph Mvc["MVC Web App (apps/mvc-web)"]
+    AcctCtrl["AccountController<br/>(login/logout)"]
+    MvcCtrl["MoviesController"]
+    MvcSvc["MoviesService + ApiTokenHandler"]
+    Session["MovieSession<br/>(token store + refresh)"]
+  end
 
-  Service --> Models
-  WatchService --> Models
+  Server["SSR Server<br/>src/server.ts, main.server.ts"]
+  Models["Models<br/>models/movie.ts, film-genre.ts,<br/>media-type.ts, format.ts"]
 
-  Server --> Service
-  App --> Public
+  App --> Sidebar
+  App --> Login
+  App --> MoviesList
+  App --> MovieForm
+  App --> LookupList
+  App --> LookupForm
+  MoviesList --> Confirm
+  LookupList --> Confirm
+
+  MoviesList -->|dispatch| Store
+  MovieForm -->|dispatch| Store
+  LookupList -->|lookup writes| LookupAdmin
+  LookupForm -->|lookup writes| LookupAdmin
+
+  Store -->|effects| Effects
+  Effects -->|HTTP| MovieSvc
+
+  Guard -.->|protects routes| AuthSvc
+  Sidebar -->|sign out| AuthSvc
+  Login -->|login| AuthSvc
+
+  AuthInt -.->|adds bearer token| MovieSvc
+  AuthInt -.->|adds bearer token| LookupAdmin
+  AuthInt -.->|adds bearer token| LookupSvc
+  ErrInt -.->|401: redirect to /login| AuthSvc
+
+  MovieSvc -->|GET/POST/PUT/DELETE| MovieCtrl
+  LookupSvc -->|GET| LookupCtrl
+  LookupAdmin -->|GET/POST/PUT/DELETE| LookupCtrl
+  AuthSvc -->|POST /auth/login| AuthCtrl
+
+  MovieSvc --> Models
+  LookupSvc --> Models
+
+  MvcCtrl --> MvcSvc
+  AcctCtrl -->|POST /auth/login| AuthCtrl
+  Session -->|refresh| AuthCtrl
+  MvcSvc -->|Bearer token| MovieCtrl
+  MvcSvc --> Session
+
+  Server --> App

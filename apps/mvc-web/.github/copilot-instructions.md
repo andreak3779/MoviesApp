@@ -21,6 +21,8 @@ MoviesWeb is an ASP.NET Core 10.0 web application demonstrating MVC/Razor Pages 
    - Implement corresponding interfaces (`IMovie`, `IUser`, etc.)
    - Include XML doc comments on public members
    - Example: `Movie` class maps JSON responses from the movies API
+   - Property names mirror the API's camelCase wire format (the API uses
+     `System.Text.Json` web defaults)
 
 4. **Views** (`Views/*.cshtml`) - Razor views and pages for rendering HTML
    - Strict separation: views receive data from controllers, never make HTTP calls
@@ -66,17 +68,28 @@ Services are registered in `Program.cs` using `builder.Services`:
 ```csharp
 builder.Services.AddHttpClient<IMoviesService, MoviesService>(client =>
 {
-    client.BaseAddress = new Uri(builder.Configuration["MoviesApi:BaseUrl"] ?? string.Empty);
-});
+    client.BaseAddress = new Uri(apiBaseUrl.TrimEnd('/') + "/");
+}).AddHttpMessageHandler<ApiTokenHandler>();
 ```
 
+The base address must include the `/api/v1` prefix - `Program.cs` validates
+this at startup and throws if it is missing.
+
 **Never instantiate services directly** — inject them via constructor parameters.
+
+### Authentication
+- `AccountController` signs in against `/api/v1/auth/login` and stores the
+  tokens in the ASP.NET Core session via `MovieSession`.
+- `MovieSession` transparently refreshes the short-lived access token.
+- `ApiTokenHandler` reads the token from the session and attaches it as a
+  bearer header on every non-auth API request.
 
 ### Configuration
 - `appsettings.json` - Base configuration
 - `appsettings.Development.json` - Development overrides
 - Access via `IConfiguration` in DI or `builder.Configuration` during setup
-- API endpoint: `MoviesApi:BaseUrl` config key
+- API endpoint: `MoviesApi:BaseUrl` config key. It must include the `/api/v1`
+  prefix; `Program.cs` refuses to start otherwise.
 
 ## Development Workflow
 
@@ -109,9 +122,26 @@ dotnet publish MoviesWeb/MoviesWeb.csproj -c Release -o out
 3. Add controller action in `MoviesController` that calls service and returns `View(result)`
 4. Create Razor view in `Views/Movies/` to render the model
 
+### API Contract Rules (verified against a running API)
+
+- The movie route is **`/api/v1/Movie`** - singular, because the API's
+  controller is `MovieController`. `/api/v1/movies` is a 404.
+- Movies are identified by **GUID**, never `int`.
+- All JSON is **camelCase**: `id`, `title`, `releaseYear`, `favourite`,
+  `criterion`, `criterionNumber`, `ownerId`, `createdAt`, `updatedAt`.
+- The API's `Movie` model has **no** `Director` and **no** `ReleaseDate`.
+- Every movie endpoint requires `Authorization: Bearer <token>`.
+- `ApiTokenHandler` attaches the token automatically - do not set the
+  header by hand in `MoviesService`.
+
 ### Querying Movie Data
 - Use `MovieQuery` class to build dynamic queries; implement `.Validate()` before use
-- Service method: `GetMovieByQueryAsync(MovieQuery query)` - passes as query string params
+- Service method: `GetMoviesAsync(MovieQuery query)` - passes as query string params
+- The API's allowed query keys are exactly: `search`, `genre`, `mediaType`,
+  `format`, `sortBy`, `sortDir`, `pageNumber`, `pageSize`. `MovieQuery.Add`
+  rejects anything else.
+- `GET /api/v1/Movie` returns a **paged envelope** (`PagedResponse<Movie>`),
+  not a bare array.
 
 ### Modifying Models
 - Update both the concrete class (e.g., `Movie`) and corresponding interface (e.g., `IMovie`)

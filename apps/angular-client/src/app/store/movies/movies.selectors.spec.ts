@@ -8,22 +8,37 @@ import {
   selectFavouriteMovies,
 } from './movies.selectors';
 import { AppState } from '../../store';
-import { Movie } from '../../../models/movie';
-import { MediaType } from '../../../models/media-type';
-import { MovieFormat } from '../../../models/movie-format';
+import { Movie } from '../../models/movie';
 
 const movie1: Movie = {
-  Id: 1, Title: 'The Matrix', Description: '', Genre: 'Sci-Fi',
-  Criterion: false, CriterionNumber: undefined,
-  MovieMediaType: MediaType.BluRay, MovieFormat: MovieFormat.Movie,
-  Year: 1999, Favourite: false,
+  Id: '00000000-0000-0000-0000-000000000001',
+  Title: 'The Matrix',
+  ReleaseYear: 1999,
+  Description: '',
+  Favourite: false,
+  Criterion: false,
+  CriterionNumber: null,
+  OwnerId: 'user-1',
+  CreatedAt: '2026-01-01T00:00:00Z',
+  UpdatedAt: null,
+  Genre: 'Sci-Fi',
+  MediaType: 'Blu-Ray',
+  Format: 'Movie',
+  FilmGenres: [],
+  MediaTypes: [],
+  Formats: [],
 };
 
 const movie2: Movie = {
-  Id: 2, Title: 'Dark', Description: '', Genre: 'Thriller',
-  Criterion: true, CriterionNumber: 1,
-  MovieMediaType: MediaType.UltraHd, MovieFormat: MovieFormat.TVSeries,
-  Year: 2017, Favourite: true,
+  ...movie1,
+  Id: '00000000-0000-0000-0000-000000000002',
+  Title: 'Dark',
+  ReleaseYear: 2017,
+  Genre: 'Thriller',
+  Format: 'TVSeries',
+  Criterion: true,
+  CriterionNumber: 1,
+  Favourite: true,
 };
 
 function buildState(overrides: Partial<MoviesState> = {}): AppState {
@@ -63,7 +78,7 @@ describe('Movies Selectors', () => {
 
   describe('selectSelectedMovie', () => {
     it('should return the movie matching selectedId', () => {
-      const result = selectSelectedMovie(buildState({ selectedId: 2 }));
+      const result = selectSelectedMovie(buildState({ selectedId: '00000000-0000-0000-0000-000000000002' }));
       expect(result).toEqual(movie2);
     });
 
@@ -77,7 +92,7 @@ describe('Movies Selectors', () => {
     it('should return only movies where Favourite is true', () => {
       const result = selectFavouriteMovies(buildState());
       expect(result).toHaveLength(1);
-      expect(result[0].Id).toBe(2);
+      expect(result[0].Id).toBe('00000000-0000-0000-0000-000000000002');
     });
   });
 });

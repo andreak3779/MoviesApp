@@ -1,44 +1,163 @@
+@model MoviesWeb.ViewModels.MovieListModel
 @{
     ViewData["Title"] = "Movies";
 }
 
-<h1>Movies</h1>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h3 mb-0">Movies</h1>
+        <span class="text-muted">@Model.TotalCount total</span>
+    </div>
 
-<div id="movies">Loading...</div>
-
-<script>
-async function loadMovies() {
-    try {
-        const res = await fetch('/movies');
-        if (!res.ok) {
-            document.getElementById('movies').innerText = 'Failed to load movies.';
-            return;
-        }
-        const movies = await res.json();
-        const container = document.getElementById('movies');
-        if (!movies || movies.length === 0) {
-            container.innerText = 'No movies found.';
-            return;
-        }
-        const ul = document.createElement('ul');
-        movies.forEach(m => {
-            const li = document.createElement('li');
-            const a = document.createElement('a');
-            const id = m.id ?? m.Id ?? '';
-            const title = m.title ?? m.Title ?? 'Untitled';
-            const year = m.releaseYear ?? m.ReleaseYear ?? '';
-            a.href = '/Movies/Details/' + id;
-            a.innerText = `${title} ${year ? '(' + year + ')' : ''}`;
-            li.appendChild(a);
-            ul.appendChild(li);
-        });
-        container.innerHTML = '';
-        container.appendChild(ul);
-    } catch (err) {
-        document.getElementById('movies').innerText = 'Error loading movies.';
-        console.error(err);
+    @if (!string.IsNullOrEmpty(TempData["Error"] as string))
+    {
+        <div class="alert alert-danger" role="alert">@TempData["Error"]</div>
     }
-}
+    @if (!string.IsNullOrEmpty(TempData["Message"] as string))
+    {
+        <div class="alert alert-success" role="alert">@TempData["Message"]</div>
+    }
 
-loadMovies();
-</script>
+    <form method="get" asp-controller="Movies" asp-action="Index" class="row g-2 mb-4">
+        <div class="col-md-3">
+            <input type="search" name="search" value="@Model.Search" class="form-control"
+                   placeholder="Search titles…" aria-label="Search titles" />
+        </div>
+        <div class="col-md-2">
+            <select name="genre" class="form-select" aria-label="Filter by genre">
+                <option value="">All genres</option>
+                @foreach (var genre in Model.Genres)
+                {
+                    <option value="@genre.Name" selected="@(Model.Genre == genre.Name)">@genre.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="mediaType" class="form-select" aria-label="Filter by media type">
+                <option value="">All media types</option>
+                @foreach (var mediaType in Model.MediaTypes)
+                {
+                    <option value="@mediaType.Name" selected="@(Model.MediaType == mediaType.Name)">@mediaType.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="format" class="form-select" aria-label="Filter by format">
+                <option value="">All formats</option>
+                @foreach (var format in Model.Formats)
+                {
+                    <option value="@format.Name" selected="@(Model.Format == format.Name)">@format.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="sortBy" class="form-select" aria-label="Sort by">
+                <option value="year" selected="@(Model.SortBy == "year")">Sort: Year</option>
+                <option value="title" selected="@(Model.SortBy == "title")">Sort: Title</option>
+            </select>
+        </div>
+        <div class="col-md-1">
+            <select name="sortDir" class="form-select" aria-label="Sort direction">
+                <option value="desc" selected="@(Model.SortDir != "asc")">Desc</option>
+                <option value="asc" selected="@(Model.SortDir == "asc")">Asc</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-grid">
+            <button type="submit" class="btn btn-primary">Apply</button>
+        </div>
+    </form>
+
+    @if (Model.Movies.Count == 0)
+    {
+        <p class="text-muted">No movies found.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th scope="col">Title</th>
+                        <th scope="col">Year</th>
+                        <th scope="col">Genre</th>
+                        <th scope="col">Media type</th>
+                        <th scope="col">Format</th>
+                        <th scope="col">Flags</th>
+                        <th scope="col"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var movie in Model.Movies)
+                    {
+                        <tr>
+                            <td>
+                                <a asp-controller="Movies" asp-action="MovieDetails" asp-route-id="@movie.Id">
+                                    @movie.Title
+                                </a>
+                            </td>
+                            <td>@movie.ReleaseYear</td>
+                            <td>@(movie.Genre ?? "—")</td>
+                            <td>@(movie.MediaType ?? "—")</td>
+                            <td>@(movie.Format ?? "—")</td>
+                            <td>
+                                @if (movie.Favourite)
+                                {
+                                    <span class="badge text-bg-warning">★ Favourite</span>
+                                }
+                                @if (movie.Criterion)
+                                {
+                                    <span class="badge text-bg-info">Criterion @movie.CriterionNumber</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <form method="post" asp-controller="Movies" asp-action="Delete" asp-route-id="@movie.Id"
+                                      onsubmit="return confirm('Delete this movie?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.HasPreviousPage || Model.HasNextPage)
+        {
+            <nav aria-label="Movie pages">
+                <ul class="pagination">
+                    @if (Model.HasPreviousPage)
+                    {
+                        <li class="page-item">
+                            <a class="page-link"
+                               asp-action="Index"
+                               asp-route-page="@(Model.PageNumber - 1)"
+                               asp-route-search="@Model.Search"
+                               asp-route-genre="@Model.Genre"
+                               asp-route-mediaType="@Model.MediaType"
+                               asp-route-format="@Model.Format"
+                               asp-route-sortBy="@Model.SortBy"
+                               asp-route-sortDir="@Model.SortDir">Previous</a>
+                        </li>
+                    }
+                    <li class="page-item disabled">
+                        <span class="page-link">Page @Model.PageNumber</span>
+                    </li>
+                    @if (Model.HasNextPage)
+                    {
+                        <li class="page-item">
+                            <a class="page-link"
+                               asp-action="Index"
+                               asp-route-page="@(Model.PageNumber + 1)"
+                               asp-route-search="@Model.Search"
+                               asp-route-genre="@Model.Genre"
+                               asp-route-mediaType="@Model.MediaType"
+                               asp-route-format="@Model.Format"
+                               asp-route-sortBy="@Model.SortBy"
+                               asp-route-sortDir="@Model.SortDir">Next</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        }
+    }
+</div>
