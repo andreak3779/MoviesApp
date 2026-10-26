@@ -197,7 +197,6 @@ var enableHttpsRedirection = app.Configuration.GetValue("EnableHttpsRedirection"
 app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<RateLimitingMiddleware>();
-app.UseMiddleware<AuditLoggingMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {

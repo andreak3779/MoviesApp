@@ -204,9 +204,9 @@ public class AuthService : IAuthService
 
     private async Task<AuthResponseDto> GenerateAuthResponseAsync(ApplicationUser user)
     {
-        var jwtToken = GenerateJwtToken(user);
+        var jwtToken = await GenerateJwtToken(user);
         var refreshToken = GenerateRefreshToken();
-        var jti = jwtToken.Id;
+        var jti = jwtToken.Id.ToString();
 
         // Store refresh token, bound to the new access token's jti family.
         var refreshTokenEntity = new RefreshToken
@@ -233,7 +233,7 @@ public class AuthService : IAuthService
         };
     }
 
-    private JwtSecurityToken GenerateJwtToken(ApplicationUser user)
+    private async Task<JwtSecurityToken> GenerateJwtToken(ApplicationUser user)
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");
         var secretKey = jwtSettings["SecretKey"]
@@ -247,13 +247,13 @@ public class AuthService : IAuthService
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id),
             new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
-            new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"?.Trim()),
+            new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}".Trim()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
         };
 
         // Add user roles
-        var roles = _userManager.GetRolesAsync(user).Result;
+        var roles = await _userManager.GetRolesAsync(user);
         foreach (var role in roles)
         {
             claims.Add(new Claim(ClaimTypes.Role, role));
