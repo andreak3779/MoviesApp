@@ -31,15 +31,16 @@ namespace MoviesWeb.Services
         Task DeleteMovieAsync(Guid id, CancellationToken cancellationToken = default);
 
         /// <summary>Updates an existing movie.</summary>
-        /// <param name="movie">The movie to update, including its identifier.</param>
+        /// <param name="id">The movie's GUID identifier.</param>
+        /// <param name="request">The fields to change.</param>
         /// <param name="cancellationToken">Token to cancel the request.</param>
-        Task UpdateMovieAsync(Movie movie, CancellationToken cancellationToken = default);
+        Task UpdateMovieAsync(Guid id, MovieUpdateRequest request, CancellationToken cancellationToken = default);
 
         /// <summary>Creates a new movie.</summary>
-        /// <param name="movie">The movie to create.</param>
+        /// <param name="request">The movie to create.</param>
         /// <param name="cancellationToken">Token to cancel the request.</param>
         /// <returns>The created movie.</returns>
-        Task<Movie?> CreateMovieAsync(Movie movie, CancellationToken cancellationToken = default);
+        Task<Movie?> CreateMovieAsync(MovieCreateRequest request, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets the list of film genres used by the filter UI.
@@ -75,9 +76,9 @@ namespace MoviesWeb.Services
     public class MoviesService : IMoviesService
     {
         private const string MoviesPath = "Movie";
-        private const string FilmGenresPath = "filmGenres";
-        private const string MediaTypesPath = "mediaTypes";
-        private const string FormatsPath = "formats";
+        private const string FilmGenresPath = "FilmGenres";
+        private const string MediaTypesPath = "MediaTypes";
+        private const string FormatsPath = "Formats";
 
         private readonly HttpClient _httpClient;
 
@@ -138,48 +139,27 @@ namespace MoviesWeb.Services
         }
 
         /// <inheritdoc />
-        public async Task UpdateMovieAsync(Movie movie, CancellationToken cancellationToken = default)
+        public async Task UpdateMovieAsync(
+            Guid id,
+            MovieUpdateRequest request,
+            CancellationToken cancellationToken = default)
         {
-            var payload = new MovieUpdateRequest
-            {
-                Title = movie.Title,
-                ReleaseYear = movie.ReleaseYear,
-                Description = movie.Description,
-                Favourite = movie.Favourite,
-                Criterion = movie.Criterion,
-                CriterionNumber = movie.CriterionNumber,
-                FilmGenreId = movie.FilmGenres.FirstOrDefault()?.Id,
-                MediaTypeId = movie.MediaTypes.FirstOrDefault()?.Id,
-                FormatId = movie.Formats.FirstOrDefault()?.Id
-            };
-
             var response = await _httpClient.PutAsJsonAsync(
-                $"{MoviesPath}/{movie.Id}", payload, ApiJson.Options, cancellationToken);
+                $"{MoviesPath}/{id}", request, ApiJson.Options, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
-                throw await BuildExceptionAsync(response, $"update movie {movie.Id}");
+                throw await BuildExceptionAsync(response, $"update movie {id}");
             }
         }
 
         /// <inheritdoc />
-        public async Task<Movie?> CreateMovieAsync(Movie movie, CancellationToken cancellationToken = default)
+        public async Task<Movie?> CreateMovieAsync(
+            MovieCreateRequest request,
+            CancellationToken cancellationToken = default)
         {
-            var payload = new MovieCreateRequest
-            {
-                Title = movie.Title,
-                ReleaseYear = movie.ReleaseYear,
-                Description = movie.Description,
-                Favourite = movie.Favourite,
-                Criterion = movie.Criterion,
-                CriterionNumber = movie.CriterionNumber,
-                FilmGenreId = movie.FilmGenres.FirstOrDefault()?.Id,
-                MediaTypeId = movie.MediaTypes.FirstOrDefault()?.Id,
-                FormatId = movie.Formats.FirstOrDefault()?.Id
-            };
-
             var response = await _httpClient.PostAsJsonAsync(
-                MoviesPath, payload, ApiJson.Options, cancellationToken);
+                MoviesPath, request, ApiJson.Options, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {

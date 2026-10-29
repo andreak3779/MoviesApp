@@ -1,0 +1,6 @@
+@model MoviesWeb.ViewModels.MovieFormModel
+@{
+    ViewData["Title"] = "Add Movie";
+}
+
+@await Html.PartialAsync("_MovieForm", Model)

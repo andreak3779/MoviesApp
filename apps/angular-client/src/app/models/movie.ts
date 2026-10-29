@@ -4,57 +4,61 @@ import { MediaTypeDto } from './media-type';
 
 /**
  * Mirrors the API's {@code MovieResponseDto}. The mockup consumes the
- * denormalised single-value fields (Genre / MediaType / Format) for the
+ * denormalised single-value fields (genre / mediaType / format) for the
  * filter row and the card; the full collections are kept for callers that
  * want to render rich detail.
+ *
+ * The field names are camelCase because that is what the API emits: the
+ * ASP.NET Core JSON defaults are camelCase, and the wire format is the
+ * contract. A PascalCase model here would leave every field undefined.
  */
 export interface Movie {
-  Id: string;
-  Title: string;
-  ReleaseYear: number;
-  Description?: string | null;
-  Favourite: boolean;
-  Criterion: boolean;
-  CriterionNumber?: number | null;
-  OwnerId: string;
-  CreatedAt: string;
-  UpdatedAt?: string | null;
+  id: string;
+  title: string;
+  releaseYear: number;
+  description?: string | null;
+  favourite: boolean;
+  criterion: boolean;
+  criterionNumber?: number | null;
+  ownerId: string;
+  createdAt: string;
+  updatedAt?: string | null;
 
   // Denormalised single-value fields for the mockup.
-  Genre?: string | null;
-  MediaType?: string | null;
-  Format?: string | null;
+  genre?: string | null;
+  mediaType?: string | null;
+  format?: string | null;
 
   // Full collections.
-  FilmGenres: FilmGenreDto[];
-  MediaTypes: MediaTypeDto[];
-  Formats: FormatDto[];
+  filmGenres: FilmGenreDto[];
+  mediaTypes: MediaTypeDto[];
+  formats: FormatDto[];
 }
 
 /**
- * Payload sent to {@code POST /api/v1/movies}. Mirrors the API's
+ * Payload sent to {@code POST /api/v1/Movie}. Mirrors the API's
  * {@code MovieCreateDto}.
  */
 export interface MovieCreatePayload {
-  Title: string;
-  ReleaseYear: number;
-  Description?: string | null;
-  Favourite: boolean;
-  Criterion: boolean;
-  CriterionNumber?: number | null;
-  FilmGenreId?: number | null;
-  MediaTypeId?: number | null;
-  FormatId?: number | null;
+  title: string;
+  releaseYear: number;
+  description?: string | null;
+  favourite: boolean;
+  criterion: boolean;
+  criterionNumber?: number | null;
+  filmGenreId?: number | null;
+  mediaTypeId?: number | null;
+  formatId?: number | null;
 }
 
 /**
- * Payload sent to {@code PUT /api/v1/movies/{id}}. Mirrors the API's
+ * Payload sent to {@code PUT /api/v1/Movie/{id}}. Mirrors the API's
  * {@code MovieUpdateDto} — all fields optional.
  */
 export type MovieUpdatePayload = Partial<MovieCreatePayload>;
 
 /**
- * Query parameters for {@code GET /api/v1/movies}. Mirrors the API's
+ * Query parameters for {@code GET /api/v1/Movie}. Mirrors the API's
  * {@code MovieQuery}.
  */
 export interface MovieQuery {
@@ -69,14 +73,21 @@ export interface MovieQuery {
 }
 
 /**
- * Generic paged response wrapper. Mirrors the API's {@code PagedResponse<T>}.
+ * The paging half of a paged response. Mirrors the API's
+ * {@code PagedResponse<T>} without the items.
  */
-export interface PagedResponse<T> {
-  items: T[];
+export interface MoviePage {
   pageNumber: number;
   pageSize: number;
   totalCount: number;
   totalPages: number;
   hasPrevious: boolean;
   hasNext: boolean;
+}
+
+/**
+ * Generic paged response wrapper. Mirrors the API's {@code PagedResponse<T>}.
+ */
+export interface PagedResponse<T> extends MoviePage {
+  items: T[];
 }

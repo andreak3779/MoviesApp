@@ -118,6 +118,8 @@ public class MovieRepository : IMovieRepository
                 .ThenInclude(mm => mm.MediaType)
             .Include(m => m.MovieFilmGenres)
                 .ThenInclude(mf => mf.FilmGenre)
+            .Include(m => m.MovieFormats)
+                .ThenInclude(mf => mf.Format)
             .FirstOrDefaultAsync(m => m.Id == id);
     }
 
@@ -128,6 +130,8 @@ public class MovieRepository : IMovieRepository
                 .ThenInclude(mm => mm.MediaType)
             .Include(m => m.MovieFilmGenres)
                 .ThenInclude(mf => mf.FilmGenre)
+            .Include(m => m.MovieFormats)
+                .ThenInclude(mf => mf.Format)
             .FirstOrDefaultAsync(m => m.Id == id);
 
         // Return null if movie doesn't exist or user doesn't own it
@@ -146,48 +150,82 @@ public class MovieRepository : IMovieRepository
         return await GetByIdAsync(movie.Id);
     }
 
+    /// <summary>
+    /// Applies <paramref name="movie"/> as the desired state of the movie with
+    /// the given id.
+    /// <para>
+    /// The argument is treated as a detached document, not as a tracked entity:
+    /// the repository loads its own tracked entity and copies from the
+    /// argument. This matters because callers may hand back the very instance
+    /// the repository previously returned — in that case clearing a tracked
+    /// collection and re-adding from the same instance would empty the
+    /// collection before it is read.
+    /// </para>
+    /// <para>
+    /// Each link collection is diffed by foreign key id: links missing from the
+    /// desired set are removed, links not yet present are added, and the rest
+    /// are left untouched. A null collection means "leave this collection
+    /// alone"; an empty collection means "remove every link in it".
+    /// </para>
+    /// </summary>
     public async Task<Movie?> UpdateAsync(Guid id, Movie movie)
     {
         var existingMovie = await _context.Movies
             .Include(m => m.MovieMediaTypes)
             .Include(m => m.MovieFilmGenres)
+            .Include(m => m.MovieFormats)
             .FirstOrDefaultAsync(m => m.Id == id);
-            
+
         if (existingMovie == null)
             return null;
 
         existingMovie.Title = movie.Title;
         existingMovie.ReleaseYear = movie.ReleaseYear;
-        
-        // Update many-to-many relationships
-        if (movie.MovieMediaTypes != null)
-        {
-            existingMovie.MovieMediaTypes.Clear();
-            foreach (var mmt in movie.MovieMediaTypes)
-            {
-                existingMovie.MovieMediaTypes.Add(mmt);
-            }
-        }
-        
-        if (movie.MovieFilmGenres != null)
-        {
-            existingMovie.MovieFilmGenres.Clear();
-            foreach (var mfg in movie.MovieFilmGenres)
-            {
-                existingMovie.MovieFilmGenres.Add(mfg); 
-            }
-        }
-        if (movie.MovieFormats != null)
-        {
-            existingMovie.MovieFormats.Clear();
-            foreach (var mf in movie.MovieFormats)
-            {
-                existingMovie.MovieFormats.Add(mf);
-            }
-        }
+        existingMovie.Description = movie.Description;
+        existingMovie.Favourite = movie.Favourite;
+        existingMovie.Criterion = movie.Criterion;
+        existingMovie.CriterionNumber = movie.Criterion ? movie.CriterionNumber : null;
+        existingMovie.UpdatedAt = movie.UpdatedAt ?? existingMovie.UpdatedAt;
+
+        SyncLinks(existingMovie.MovieMediaTypes, movie.MovieMediaTypes, mm => mm.MediaTypeId, mm => new MovieMediaType { MediaTypeId = mm.MediaTypeId });
+        SyncLinks(existingMovie.MovieFilmGenres, movie.MovieFilmGenres, mf => mf.FilmGenreId, mf => new MovieFilmGenre { FilmGenreId = mf.FilmGenreId });
+        SyncLinks(existingMovie.MovieFormats, movie.MovieFormats, mf => mf.FormatId, mf => new MovieFormat { FormatId = mf.FormatId });
 
         await _context.SaveChangesAsync();
         return await GetByIdAsync(existingMovie.Id);
+    }
+
+    /// <summary>
+    /// Reconciles a tracked link collection against the desired one by foreign
+    /// key id. Links absent from the desired set are removed, links not yet
+    /// present are added, and the remainder are left alone.
+    /// </summary>
+    private static void SyncLinks<TLink>(
+        ICollection<TLink> current,
+        ICollection<TLink>? desired,
+        Func<TLink, int> keySelector,
+        Func<TLink, TLink> factory)
+        where TLink : class
+    {
+        if (desired == null)
+            return;
+
+        var desiredByKey = desired
+            .GroupBy(keySelector)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        foreach (var link in current.ToList())
+        {
+            if (!desiredByKey.ContainsKey(keySelector(link)))
+                current.Remove(link);
+        }
+
+        var currentKeys = current.Select(keySelector).ToHashSet();
+        foreach (var link in desiredByKey.Values)
+        {
+            if (!currentKeys.Contains(keySelector(link)))
+                current.Add(factory(link));
+        }
     }
 
     public async Task<bool> DeleteAsync(Guid id)

@@ -1,8 +1,8 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
-  computed,
   inject,
   signal,
 } from '@angular/core';
@@ -12,9 +12,10 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { Subject, filter, switchMap, take } from 'rxjs';
+import { Actions, ofType } from '@ngrx/effects';
+import { filter, switchMap, take } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MovieActions } from '../../store/movies/movies.actions';
 import {
@@ -22,13 +23,13 @@ import {
 } from '../../store/movies/movies.selectors';
 import { LookupService } from '../../core/services/lookup.service';
 import { MovieService } from '../../services/movie-service';
-import { Movie } from '../../models/movie';
+import { Movie, MovieCreatePayload, MovieUpdatePayload } from '../../models/movie';
 
 @Component({
   selector: 'app-movie-form',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   template: `
     <div class="form-shell">
       <button type="button" class="back" (click)="cancel()">← Back to Movies</button>
@@ -73,7 +74,7 @@ import { Movie } from '../../models/movie';
                 }
               </select>
             </label>
-            <a class="manage" routerLink="/film-genres" (click)="$event.preventDefault()">Manage →</a>
+            <a class="manage" routerLink="/genres">Manage →</a>
           </div>
 
           <div class="row">
@@ -86,7 +87,7 @@ import { Movie } from '../../models/movie';
                 }
               </select>
             </label>
-            <a class="manage" routerLink="/formats" (click)="$event.preventDefault()">Manage →</a>
+            <a class="manage" routerLink="/formats">Manage →</a>
           </div>
 
           <div class="row">
@@ -99,7 +100,7 @@ import { Movie } from '../../models/movie';
                 }
               </select>
             </label>
-            <a class="manage" routerLink="/media-types" (click)="$event.preventDefault()">Manage →</a>
+            <a class="manage" routerLink="/media-types">Manage →</a>
           </div>
         </section>
 
@@ -128,7 +129,7 @@ import { Movie } from '../../models/movie';
         </section>
 
         @if (submitError()) {
-          <p class="error">{{ submitError() }}</p>
+          <p class="error" data-testid="submit-error">{{ submitError() }}</p>
         }
 
         <div class="actions">
@@ -180,9 +181,11 @@ import { Movie } from '../../models/movie';
 export class MovieFormComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly store = inject(Store);
+  private readonly actions$ = inject(Actions);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly movieService = inject(MovieService);
+  private readonly destroyRef = inject(DestroyRef);
   protected readonly lookup = inject(LookupService);
 
   readonly isEdit = signal(false);
@@ -203,14 +206,12 @@ export class MovieFormComponent implements OnInit {
     favourite: [false],
   });
 
-  private readonly reload$ = new Subject<void>();
-
   ngOnInit(): void {
     void this.lookup.refreshAll();
 
     this.route.paramMap
       .pipe(
-        takeUntilDestroyed(),
+        takeUntilDestroyed(this.destroyRef),
         switchMap((pm) => {
           const id = pm.get('id');
           this.editingId.set(id ?? null);
@@ -220,34 +221,57 @@ export class MovieFormComponent implements OnInit {
           return this.store.select(selectAllMovies).pipe(
             take(1),
             switchMap((cached) => {
-              const found = cached.find((m) => m.Id === id);
+              const found = cached.find((m) => m.id === id);
               if (found) return [found];
               return this.movieService.getById(id);
             }),
           );
         }),
         filter((m): m is Movie => !!m),
-        takeUntilDestroyed(),
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((m) => this.populate(m));
 
     // Apply / remove the conditional criterionNumber validator.
     this.form.controls.criterion.valueChanges
-      .pipe(takeUntilDestroyed())
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((enabled) => this.applyCriterionValidator(!!enabled));
+
+    // The save has to finish before the form leaves the page. Navigating
+    // straight away threw the failure away: the user was returned to the
+    // list with no sign that anything had gone wrong.
+    this.actions$
+      .pipe(
+        ofType(MovieActions.addMovieSuccess, MovieActions.updateMovieSuccess),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => {
+        this.submitting.set(false);
+        void this.router.navigate(['/movies']);
+      });
+
+    this.actions$
+      .pipe(
+        ofType(MovieActions.addMovieFailure, MovieActions.updateMovieFailure),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(({ error }) => {
+        this.submitting.set(false);
+        this.submitError.set(error);
+      });
   }
 
   private populate(m: Movie): void {
     this.form.patchValue({
-      title: m.Title,
-      year: m.ReleaseYear,
-      description: m.Description ?? '',
-      genre: m.FilmGenres[0]?.id ?? null,
-      format: m.Formats[0]?.id ?? null,
-      mediaType: m.MediaTypes[0]?.id ?? null,
-      criterion: m.Criterion,
-      criterionNumber: m.CriterionNumber ?? null,
-      favourite: m.Favourite,
+      title: m.title,
+      year: m.releaseYear,
+      description: m.description ?? '',
+      genre: m.filmGenres[0]?.id ?? null,
+      format: m.formats[0]?.id ?? null,
+      mediaType: m.mediaTypes[0]?.id ?? null,
+      criterion: m.criterion,
+      criterionNumber: m.criterionNumber ?? null,
+      favourite: m.favourite,
     });
   }
 
@@ -265,54 +289,31 @@ export class MovieFormComponent implements OnInit {
     if (this.form.invalid || this.submitting()) return;
     this.submitting.set(true);
     this.submitError.set(null);
+
     const v = this.form.getRawValue();
-    const payload = {
-      Title: v.title,
-      ReleaseYear: v.year,
-      Description: v.description || null,
-      Favourite: v.favourite,
-      Criterion: v.criterion,
-      CriterionNumber: v.criterion ? v.criterionNumber : null,
-      FilmGenreId: v.genre,
-      MediaTypeId: v.mediaType,
-      FormatId: v.format,
+    const payload: MovieCreatePayload = {
+      title: v.title,
+      releaseYear: v.year,
+      description: v.description || null,
+      favourite: v.favourite,
+      criterion: v.criterion,
+      criterionNumber: v.criterion ? v.criterionNumber : null,
+      filmGenreId: v.genre,
+      mediaTypeId: v.mediaType,
+      formatId: v.format,
     };
-    if (this.isEdit() && this.editingId()) {
-      this.store.dispatch(MovieActions.updateMovie({ movie: this.assembleFullMovie(payload) }));
+
+    const id = this.editingId();
+    if (this.isEdit() && id) {
+      this.store.dispatch(
+        MovieActions.updateMovie({ id, changes: payload as MovieUpdatePayload }),
+      );
     } else {
       this.store.dispatch(MovieActions.addMovie({ movie: payload }));
     }
-    // Navigate optimistically. Errors show up via the form's submitError signal if needed.
-    setTimeout(() => this.cancel(), 0);
   }
 
   cancel(): void {
     void this.router.navigate(['/movies']);
-  }
-
-  private assembleFullMovie(payload: object): Movie {
-    // The reducer's update path uses the full Movie shape from the action; merge the
-    // existing entity's collections with the new payload so we don't accidentally
-    // wipe related collections.
-    const existing = this.store.selectSignal(selectAllMovies)().find((m) => m.Id === this.editingId());
-    const fallback: Movie = {
-      Id: this.editingId() ?? '',
-      Title: '',
-      ReleaseYear: 0,
-      Description: null,
-      Favourite: false,
-      Criterion: false,
-      CriterionNumber: null,
-      OwnerId: '',
-      CreatedAt: new Date().toISOString(),
-      UpdatedAt: null,
-      Genre: null,
-      MediaType: null,
-      Format: null,
-      FilmGenres: [],
-      MediaTypes: [],
-      Formats: [],
-    };
-    return { ...(existing ?? fallback), ...(payload as Partial<Movie>) };
   }
 }

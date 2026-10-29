@@ -2,15 +2,17 @@
 
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![.NET](https://img.shields.io/badge/.NET-net10.0-blue.svg)](https://dotnet.microsoft.com/) [![Editor: VS Code](https://img.shields.io/badge/Editor-VS%20Code-blue?logo=visual-studio-code)](https://code.visualstudio.com) [![OS: Zorin OS](https://img.shields.io/badge/OS-Zorin%20OS-5078A0)](https://zorinos.com)
 
-MoviesWeb is a small ASP.NET Core web application (Razor Pages / MVC mixed layout) for browsing and managing movie data. The project solution and the web app are included in this repository.
+MoviesWeb is a small ASP.NET Core web application for browsing and managing movie data. The project solution and the web app are included in this repository.
 
-**Skills demonstrated:** ASP.NET Core, Razor Pages, MVC, C#, web application architecture
+**Skills demonstrated:** ASP.NET Core, MVC, Razor views, C#, web application architecture
 
 **Project:** MoviesWeb
 
 MoviesWeb is the server-rendered front end for the MoviesApp Web API. It signs
 in against the API's `/api/v1/auth` endpoints, stores the issued JWT in the
-server-side session, and attaches it to every upstream request.
+server-side session, and attaches it to every upstream request. The pages
+follow the **MoviesApp UI Mockup**: a sidebar shell, a card grid for the
+collection, an add / edit form, a details page and a sign-in screen.
 
 ## How it talks to the Web API
 
@@ -18,10 +20,13 @@ server-side session, and attaches it to every upstream request.
 | --- | --- |
 | Base address | `MoviesApi:BaseUrl` — must include the `/api/v1` prefix, e.g. `http://localhost:8081/api/v1` |
 | Movie routes | `/api/v1/Movie` (singular — the API's controller is `MovieController`) |
+| Lookup routes | `/api/v1/FilmGenres`, `/api/v1/MediaTypes`, `/api/v1/Formats` |
+| Auth routes | `/api/v1/Auth/login`, `/register`, `/refresh`, `/logout` |
 | Identifiers | GUIDs, not integers |
 | Wire format | camelCase JSON; the list endpoint returns a paged envelope (`items`, `totalCount`, `hasNext`, ...) |
 | Auth | `Authorization: Bearer <token>` attached by `ApiTokenHandler` from the session |
 | Sessions | ASP.NET Core session for the API tokens, cookie auth for the browser |
+| Sign-out | Revokes the refresh token on the API before the local session is cleared |
 
 ### Running against the API
 
@@ -66,16 +71,17 @@ dotnet publish MoviesWeb/MoviesWeb.csproj -c Release -o out
 
 - MoviesWeb/MoviesWeb.csproj - project file
 - MoviesWeb/Program.cs - application entry (DI, session, cookie auth)
-- MoviesWeb/Controllers/AccountController.cs - sign in / sign out against the API
-- MoviesWeb/Controllers/MoviesController.cs - movie list and details pages
+- MoviesWeb/Controllers/AccountController.cs - sign in, register and sign out against the API
+- MoviesWeb/Controllers/MoviesController.cs - movie list, add / edit form and details pages
+- MoviesWeb/Controllers/HomeController.cs - home, privacy and error pages
 - MoviesWeb/Services/MoviesService.cs - HTTP client for `/api/v1/Movie`
 - MoviesWeb/Services/ApiAuthService.cs - HTTP client for `/api/v1/auth`
 - MoviesWeb/Services/ApiTokenHandler.cs - attaches the bearer token
 - MoviesWeb/Services/MovieSession.cs - stores and refreshes the API tokens
 - MoviesWeb/Models/ - models mirroring the API's DTOs
-- MoviesWeb/ViewModels/MovieListModel.cs - list view model with paging metadata
-- MoviesWeb/Views - Razor views
-- MoviesWeb/wwwroot - static assets (css, js, lib)
+- MoviesWeb/ViewModels/ - list, form and tile view models
+- MoviesWeb/Views - Razor views (`Movies`, `Account`, `Home`, `Shared`)
+- MoviesWeb/wwwroot/css/site.css - the mockup's design tokens and layout
 
 ## Development notes
 
@@ -84,12 +90,24 @@ dotnet publish MoviesWeb/MoviesWeb.csproj -c Release -o out
 
 ## Tests
 
-The `MoviesWeb.Tests` project (xUnit + Moq) covers the API client, the
-controller, and query validation:
+The `MoviesWeb.Tests` project (xUnit + Moq + `WebApplicationFactory`) covers
+the API clients, the controllers, the session and the Razor views:
 
 ```bash
 dotnet test MoviesWeb.sln
 ```
+
+To reproduce the coverage report CI publishes:
+
+```bash
+dotnet test MoviesWeb.sln --configuration Release \
+  --collect:"XPlat Code Coverage" \
+  --settings MoviesWeb.Tests/coverlet.runsettings \
+  --results-directory ./coverage
+```
+
+The repo enforces a **70% line-coverage gate** per app
+(`scripts/check-coverage.py`); the MVC app currently sits at **93.42%**.
 
 ## Contributing
 

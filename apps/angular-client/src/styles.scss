@@ -5,6 +5,31 @@
 // custom components at https://material.angular.dev/guide/theming
 @use '@angular/material' as mat;
 
+// ---------------------------------------------------------------------------
+// MoviesApp design tokens
+//
+// These are the colours of the MoviesApp UI Mockup. The components consume
+// them as CSS custom properties, so this is the single place the palette is
+// defined — changing a colour here changes the whole application.
+//
+// The palette is expressed in OKLCH so that the tints and the shades of a
+// hue stay perceptually even as they are lightened or darkened.
+// ---------------------------------------------------------------------------
+:root {
+  --bg: oklch(97.5% 0.004 320);
+  --surface: oklch(99% 0.002 320);
+  --surface-border: oklch(89% 0.01 320);
+  --ink: oklch(21% 0.015 320);
+  --ink-secondary: oklch(46% 0.012 320);
+  --primary: oklch(40% 0.19 350);
+  --primary-hover: oklch(34% 0.19 350);
+  --primary-tint: oklch(94% 0.03 350);
+  --tertiary: oklch(46% 0.15 300);
+  --tertiary-tint: oklch(94% 0.025 300);
+  --danger: oklch(50% 0.19 25);
+  --danger-tint: oklch(95% 0.03 25);
+}
+
 html {
   height: 100%;
   @include mat.theme((
@@ -19,16 +44,16 @@ html {
 
 body {
   // Default the application to a light color theme. This can be changed to
-  // `dark` to enable the dark color theme, or to `light dark` to defer to the
-  // user's system settings.
+  // `dark` to enable the dark color theme, or to `light dark` to defer to
+  // the user's system settings.
   color-scheme: light;
 
   // Set a default background, font and text colors for the application using
   // Angular Material's system-level CSS variables. Learn more about these
   // variables at https://material.angular.dev/guide/system-variables
-  background-color: var(--mat-sys-surface);
-  color: var(--mat-sys-on-surface);
-  font: var(--mat-sys-body-medium);
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
 
   // Reset the user agent margin.
   margin: 0;

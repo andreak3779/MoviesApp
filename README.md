@@ -9,13 +9,11 @@ MoviesApp is a secure, production-ready movie collection management system organ
 This layout allows independent app development while keeping CI/CD, container orchestration, and contribution workflows centralized.
 
 > **Current state.** All three apps build and all three test suites are green
-> (**93 tests**: Angular 26, Web API 35, MVC 32). The MVC app and the Web API
-> have been verified end-to-end against each other. The Angular client is a
-> complete application but is **not yet pointed at the live API contract** —
-> it calls `/api/v1/movies` (the real route is the singular `/api/v1/Movie`)
-> and expects PascalCase while the API emits camelCase. See
-> [PROJECT-STATUS.md](docs/PROJECT-STATUS.md) for the full picture, including
-> three open API defects.
+> (**345 tests**: Angular 92, Web API 144, MVC 109). Every app is pointed at
+> the live API contract, and each one is held to a **70% line-coverage gate**
+> in CI (Angular 79.07%, MVC 93.42%). The Angular client and the MVC app
+> both render the MoviesApp UI Mockup. See
+> [PROJECT-STATUS.md](docs/PROJECT-STATUS.md) for the full picture.
 
 ## Repository Layout
 

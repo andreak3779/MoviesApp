@@ -1,11 +1,17 @@
 import { createActionGroup, emptyProps, props } from '@ngrx/store';
-import { Movie, MovieCreatePayload, MovieQuery } from '../../models/movie';
+import {
+  Movie,
+  MovieCreatePayload,
+  MoviePage,
+  MovieQuery,
+  MovieUpdatePayload,
+} from '../../models/movie';
 
 export const MovieActions = createActionGroup({
   source: 'Movies',
   events: {
     'Load Movies': props<{ query?: MovieQuery }>(),
-    'Load Movies Success': props<{ movies: Movie[] }>(),
+    'Load Movies Success': props<{ movies: Movie[]; page: MoviePage }>(),
     'Load Movies Failure': props<{ error: string }>(),
 
     'Select Movie': props<{ id: string }>(),
@@ -15,7 +21,7 @@ export const MovieActions = createActionGroup({
     'Add Movie Success': props<{ movie: Movie }>(),
     'Add Movie Failure': props<{ error: string }>(),
 
-    'Update Movie': props<{ movie: Movie }>(),
+    'Update Movie': props<{ id: string; changes: MovieUpdatePayload }>(),
     'Update Movie Success': props<{ movie: Movie }>(),
     'Update Movie Failure': props<{ error: string }>(),
 

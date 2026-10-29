@@ -7,6 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "test:coverage": "ng test --watch=false --coverage",
     "serve:ssr:movies-app": "node dist/movies-app/server/server.mjs"
   },
   "prettier": {
@@ -54,6 +55,7 @@
     "@angular/material": "^22.2.3",
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.5",
+    "@vitest/coverage-v8": "^5.0.5",
     "jsdom": "^30.1.3",
     "typescript": "~6.0.3",
     "vitest": "^5.0.5"

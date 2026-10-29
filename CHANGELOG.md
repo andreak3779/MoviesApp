@@ -5,6 +5,100 @@ All notable changes to the MoviesApp project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.0] - 2026-10-29
+
+### 🎨 UI Mockup — Angular and MVC on the same design
+
+The Angular client and the MVC app now render the **MoviesApp UI Mockup**:
+the same 12-token OKLCH palette, the same sidebar shell, the same card grid
+with coloured poster tiles, the same add / edit form and the same details
+page. Both clients are pointed at the live Web API, and every app is held to
+a 70% line-coverage gate in CI.
+
+#### Added
+
+##### Angular client (`apps/angular-client`)
+- **92 component, store and service specs** covering the movies list, the
+  add / edit form, the login page, the interceptors, the route guard, the
+  lookup service and the reducers / selectors / effects.
+- **`npm run test:coverage`** and the `@angular/build:unit-test` coverage
+  configuration, with a 70% line threshold enforced by the builder itself.
+- **`@vitest/coverage-v8`** — the collector the Angular unit-test builder
+  needs to produce a coverage report.
+
+##### MVC web app (`apps/mvc-web`)
+- **The mockup design.** `wwwroot/css/site.css` was rewritten around the
+  12 OKLCH design tokens; `Views/Shared/_Layout.cshtml` became the sidebar
+  shell and `Views/Shared/_AuthLayout.cshtml` the centred sign-in card.
+  Bootstrap and jQuery are gone.
+- **Add and edit.** `MoviesController.Create` / `Edit`, the `MovieFormModel`
+  view model, the `_MovieForm.cshtml` partial and the `Create.cshtml` /
+  `Edit.cshtml` views. The form carries one id per lookup, and the
+  Criterion number is only sent when the movie is a Criterion title.
+- **A register page.** `AccountController.Register` and
+  `Views/Account/Register.cshtml`, backed by the API's `RegisterDto`
+  validation rules.
+- **Server-side sign-out.** Signing out now revokes the refresh token on the
+  API before the local session is cleared, so a token that stays valid
+  server-side cannot be used to mint a new session.
+- **A movie details page** in the mockup's style, and a filter row that
+  carries the active search, genre, format, media type and sort state.
+- **109 tests** — the API clients, the controllers, the session, the token
+  handler and two `WebApplicationFactory` suites that boot the real pipeline
+  and render the real Razor views.
+- **`MovieTile`** — the poster tile's hash-derived colour and the title's
+  initial, matching what the Angular client draws.
+
+##### Web API (`apps/web-api`)
+- **144 tests** — the contract, the repositories against a real SQLite
+  database, the middleware, the token lifecycle and `WebApplicationFactory`
+  integration suites that boot the API in memory.
+
+##### CI
+- **A 70% line-coverage gate per app**, enforced by
+  `scripts/check-coverage.py` and published as a workflow artifact. The
+  threshold lives in one place (`COVERAGE_THRESHOLD`) and the report format
+  is detected from the file extension, so the Angular (Istanbul JSON) and
+  the .NET (Cobertura XML) apps share one gate.
+
+#### Fixed
+
+##### Angular client (`apps/angular-client`)
+- **`takeUntilDestroyed()` outside an injection context.** `ngOnInit` is not
+  an injection context, so `MoviesListComponent` and `MovieFormComponent`
+  threw `NG0203` at runtime and their subscriptions never tore down. Both
+  components now hold an explicit `DestroyRef`.
+- **The error interceptor's refresh-and-retry.** A failing refresh threw
+  synchronously inside `catchError` instead of being routed to the same
+  error path. The refresh is now deferred, so the interceptor clears the
+  session and redirects to the login page exactly once.
+- **The guard's argument list.** Angular 22's `CanMatchFn` takes three
+  arguments.
+
+##### MVC web app (`apps/mvc-web`)
+- **The unmapped Razor Pages.** `Views/Privacy.cshtml` and
+  `Views/Error.cshtml` were `@page` views in an app that only registers
+  MVC controllers, so they were never reachable. They are now MVC views
+  under `Views/Home/`, and the exception handler points at `/Home/Error`.
+- **`HomeController` lived in the wrong namespace** (`MyApp.Namespace`), so
+  it was never discovered by the MVC router.
+- **The lookup routes.** `MoviesService` asked for `/api/v1/filmGenres`; the
+  API's controller is `FilmGenresController`, so the route is
+  `/api/v1/FilmGenres`.
+- **The dead Bootstrap scoped CSS.** `Views/Shared/_Layout.cshtml.css` was
+  left over from the Bootstrap shell. It matched nothing in the mockup and
+  forced a scope attribute onto the layout's markup.
+
+#### Removed
+
+##### MVC web app (`apps/mvc-web`)
+- **The dead legacy models** — `User`, `IUser`, `UserFavouriteMovies`,
+  `IUserFavouriteMovies`, `CriterionTitle` and `ICriterionTitle`. They were
+  left over from a standalone version of the app and are not referenced by
+  any code path. The `User.Authenticate` guard test went with them: the
+  method no longer exists, and the app never authenticates locally — it
+  delegates to the API's Identity-backed auth endpoints.
+
 ## [4.1.0] - 2026-10-25
 
 ### 🔧 MVC Web App — Rebuilt Against the Real API Contract

@@ -29,9 +29,9 @@ export class LookupService {
   /** Force-fetch all three lists. Safe to call repeatedly. */
   async refreshAll(): Promise<void> {
     const [fg, mt, fm] = await Promise.all([
-      firstValueFrom(this.http.get<FilmGenreDto[]>(`${this.baseUrl}/filmGenres`)),
-      firstValueFrom(this.http.get<MediaTypeDto[]>(`${this.baseUrl}/mediaTypes`)),
-      firstValueFrom(this.http.get<FormatDto[]>(`${this.baseUrl}/formats`)),
+      firstValueFrom(this.http.get<FilmGenreDto[]>(`${this.baseUrl}/FilmGenres`)),
+      firstValueFrom(this.http.get<MediaTypeDto[]>(`${this.baseUrl}/MediaTypes`)),
+      firstValueFrom(this.http.get<FormatDto[]>(`${this.baseUrl}/Formats`)),
     ]);
     this._filmGenres.set(fg);
     this._mediaTypes.set(mt);

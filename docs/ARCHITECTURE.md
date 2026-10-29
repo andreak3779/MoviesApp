@@ -146,8 +146,8 @@ graph LR
   end
 
   subgraph Mvc["MVC Web App (apps/mvc-web)"]
-    AcctCtrl["AccountController<br/>(login/logout)"]
-    MvcCtrl["MoviesController"]
+    AcctCtrl["AccountController<br/>(login/register/logout)"]
+    MvcCtrl["MoviesController<br/>(list/add/edit/details/delete)"]
     MvcSvc["MoviesService + ApiTokenHandler"]
     Session["MovieSession<br/>(token store + refresh)"]
   end
@@ -190,7 +190,8 @@ graph LR
   LookupSvc --> Models
 
   MvcCtrl --> MvcSvc
-  AcctCtrl -->|POST /auth/login| AuthCtrl
+  AcctCtrl -->|POST /auth/login + /auth/register| AuthCtrl
+  AcctCtrl -->|POST /auth/logout (revokes the refresh token)| AuthCtrl
   Session -->|refresh| AuthCtrl
   MvcSvc -->|Bearer token| MovieCtrl
   MvcSvc --> Session

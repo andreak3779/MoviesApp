@@ -7,14 +7,10 @@ Secure, production-ready ASP.NET Core Web API for managing movie collections wit
 > **Route casing — the one thing to get right.** The movie controller is
 > named `MovieController`, so the movie route is the **singular**
 > `/api/v1/Movie`. `/api/v1/movies` and `/api/v1/Movies` both return **404**.
-> The lookup controllers are plural (`/api/v1/filmGenres`,
-> `/api/v1/mediaTypes`, `/api/v1/formats`) and are matched
-> case-insensitively. All JSON is camelCase.
->
-> **Known defects** (see [docs/PROJECT-STATUS.md](../../docs/PROJECT-STATUS.md)):
-> `POST` with a `formatId` returns 500, `PUT` silently drops several fields,
-> and the single-movie `GET` returns empty `formats`. Two of these are on the
-> update path and affect every client.
+> The lookup controllers are plural (`/api/v1/FilmGenres`,
+> `/api/v1/MediaTypes`, `/api/v1/Formats`) and are matched
+> case-insensitively, as are the auth routes (`/api/v1/Auth/login`).
+> All JSON is camelCase.
 
 ## 🏗️ Architecture
 
@@ -25,7 +21,7 @@ MoviesAPI.sln
 ├── MoviesApiDomain/     # Domain Layer - Business entities
 ├── MoviesApiData/       # Data Layer - EF Core, Repositories, Migrations
 ├── MoviesApi/           # API Layer - Controllers, Services, DTOs
-└── MoviesApi.Tests/     # Test Project - Unit tests
+└── MoviesApi.Tests/     # Test Project - Unit, integration and middleware tests
 ```
 
 ### Layer Responsibilities
@@ -64,7 +60,7 @@ MoviesApi → MoviesApiData → MoviesApiDomain
 - Security headers (CSP, HSTS, X-Frame-Options, etc.)
 - Input validation and sanitization
 - GUID-based resource IDs (anti-enumeration)
-- Protected Swagger documentation
+- Swagger UI with bearer-token authentication
 
 ---
 
@@ -109,12 +105,39 @@ The API will be available at:
 
 ---
 
+## 📖 Swagger
+
+The OpenAPI document is served at `/swagger/v1/swagger.json` and the
+interactive UI at `/swagger`.
+
+Swagger is **on by default in Development** and **off everywhere else**, so
+the container stack does not publish the API surface unless it is asked to.
+Set `EnableSwagger=true` (an environment variable in the container, a user
+secret locally) to expose it anywhere.
+
+The document describes every endpoint, renders the XML comments on the
+controllers and DTOs as descriptions, and declares the `http`/`bearer`
+security scheme — which is what makes the **Authorize** button in the UI send
+`Authorization: Bearer <token>`.
+
+To call the protected endpoints from the Swagger UI:
+
+1. `POST /api/v1/Auth/register` (or `login`) and copy the `token` value.
+2. Click **Authorize**, paste the token, and confirm.
+3. Call any endpoint under `/api/v1/Movie`.
+
+The Swagger paths get a relaxed Content-Security-Policy (`style-src 'unsafe-inline'`,
+`img-src data:`) because the UI needs inline styles and embedded images.
+Every other path keeps the strict policy.
+
+---
+
 ## 🔐 Authentication Endpoints
 
 ### Register New User
 
 ```bash
-POST /api/v1/auth/register
+POST /api/v1/Auth/register
 Content-Type: application/json
 
 {
@@ -139,7 +162,7 @@ after a successful sign-in.
 ### Login
 
 ```bash
-POST /api/v1/auth/login
+POST /api/v1/Auth/login
 Content-Type: application/json
 
 {
@@ -163,7 +186,7 @@ Content-Type: application/json
 ### Refresh Token
 
 ```bash
-POST /api/v1/auth/refresh
+POST /api/v1/Auth/refresh
 Content-Type: application/json
 
 {
@@ -175,7 +198,7 @@ Content-Type: application/json
 ### Logout
 
 ```bash
-POST /api/v1/auth/logout
+POST /api/v1/Auth/logout
 Authorization: Bearer YOUR_TOKEN
 Content-Type: application/json
 
@@ -187,7 +210,7 @@ Content-Type: application/json
 ### Get Current User
 
 ```bash
-GET /api/v1/auth/me
+GET /api/v1/Auth/me
 Authorization: Bearer YOUR_TOKEN
 ```
 
@@ -263,31 +286,29 @@ Authorization: Bearer YOUR_TOKEN
 
 ## 📚 Reference Data Endpoints
 
-These endpoints are publicly accessible (no authentication required).
+The three lookup resources — film genres, media types and formats — share
+the same shape.
 
-### Get All Media Types
-
-```bash
-GET /api/v1/mediatypes
-```
-
-### Get Media Type by ID
+**Reads are public** (no authentication required):
 
 ```bash
-GET /api/v1/mediatypes/{id}
+GET /api/v1/FilmGenres
+GET /api/v1/FilmGenres/{id}
+GET /api/v1/MediaTypes
+GET /api/v1/MediaTypes/{id}
+GET /api/v1/Formats
+GET /api/v1/Formats/{id}
 ```
 
-### Get All Film Genres
+**Writes require a bearer token** and are audit logged:
 
 ```bash
-GET /api/v1/filmgenres
+POST   /api/v1/FilmGenres        # { "name": "...", "description": "..." }
+PUT    /api/v1/FilmGenres/{id}
+DELETE /api/v1/FilmGenres/{id}
 ```
 
-### Get Film Genre by ID
-
-```bash
-GET /api/v1/filmgenres/{id}
-```
+The same three verbs exist on `/api/v1/MediaTypes` and `/api/v1/Formats`.
 
 ---
 
@@ -331,6 +352,28 @@ cd /home/user/src/MoviesApp/apps/web-api
 dotnet test
 ```
 
+The suite boots the real API in-process (`WebApplicationFactory`) against a
+throwaway SQLite database, so it exercises the shipped middleware pipeline,
+not a simulation of it.
+
+### Coverage
+
+```bash
+cd /home/user/src/MoviesApp/apps/web-api
+dotnet test MoviesAPI.sln \
+  --collect:"XPlat Code Coverage" \
+  --settings MoviesApi.Tests/coverlet.runsettings \
+  --results-directory ./coverage
+```
+
+`MoviesApi.Tests/coverlet.runsettings` excludes the EF Core migrations and
+the model snapshot — generated schema plumbing that no test can meaningfully
+exercise. Nothing else is excluded, so the reported percentage reflects the
+code the application actually runs.
+
+The same gate runs in CI: the workflow measures the coverage, fails the build
+if it is below **70%**, and publishes the report as a workflow artifact.
+
 ---
 
 ## 🔧 Configuration
@@ -368,34 +411,51 @@ dotnet ef database update
 ## 📁 Project Structure
 
 ```
+MoviesApiDomain/
+└── Models/
+    ├── ApplicationUser.cs      # Identity user model
+    ├── Movie.cs                # Movie entity
+    ├── FilmGenre.cs            # Film genre lookup
+    ├── MediaType.cs            # Media type lookup
+    ├── Format.cs               # Movie format lookup
+    ├── MovieFilmGenre.cs       # Movie <-> genre junction
+    ├── MovieMediaType.cs       # Movie <-> media type junction
+    ├── MovieFormat.cs          # Movie <-> format junction
+    ├── RefreshToken.cs         # Refresh token entity
+    ├── AuditLog.cs             # Audit log entity
+    └── MovieQuery.cs           # Query criteria for the movie list
+
+MoviesApiData/
+├── Data/
+│   └── MoviesDbContext.cs      # EF Core DbContext
+├── Repositories/
+│   ├── IMovieRepository.cs / MovieRepository.cs
+│   ├── IFilmGenreRepository.cs / FilmGenreRepository.cs
+│   ├── IMediaTypeRepository.cs / MediaTypeRepository.cs
+│   └── IFormatRepository.cs / FormatRepository.cs
+└── Migrations/                 # Generated EF Core migrations
+
 MoviesApi/
+├── Configuration/
+│   └── CorsOriginGuard.cs      # Refuses to start with placeholder CORS origins
 ├── Controllers/
 │   ├── AuthController.cs       # Authentication endpoints
 │   ├── MovieController.cs      # Movie CRUD operations
 │   ├── FilmGenresController.cs # Reference data
-│   └── MediaTypesController.cs # Reference data
-├── Data/
-│   └── MoviesDbContext.cs      # EF Core DbContext
+│   ├── MediaTypesController.cs # Reference data
+│   └── FormatsController.cs    # Reference data
 ├── DTOs/
 │   ├── AuthDtos.cs             # Authentication DTOs
 │   ├── MovieDtos.cs            # Movie DTOs
 │   └── PaginationDtos.cs       # Pagination DTOs
 ├── Middleware/
-│   ├── AuditLoggingMiddleware.cs
-│   ├── ExceptionHandlingMiddleware.cs
-│   ├── RateLimitingMiddleware.cs
-│   └── SecurityHeadersMiddleware.cs
-├── Models/
-│   ├── ApplicationUser.cs      # Identity user model
-│   ├── Movie.cs                # Movie entity
-│   ├── RefreshToken.cs         # Refresh token entity
-│   └── AuditLog.cs             # Audit log entity
-├── Repositories/
-│   ├── IMovieRepository.cs
-│   └── MovieRepository.cs
+│   ├── ExceptionHandlingMiddleware.cs  # Unhandled exceptions -> ProblemDetails
+│   ├── RateLimitingMiddleware.cs       # Per-user read/write limits
+│   └── SecurityHeadersMiddleware.cs    # CSP, HSTS and the other headers
 ├── Services/
-│   ├── AuthService.cs          # JWT authentication
-│   └── AuditLogService.cs      # Audit logging
+│   ├── AuthService.cs          # JWT authentication and token rotation
+│   ├── AuditLogService.cs      # Audit logging
+│   └── SensitiveFieldRedactor.cs
 └── Program.cs                  # Application configuration
 ```
 

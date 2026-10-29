@@ -19,7 +19,11 @@ namespace MoviesWeb.Services
         Task<AuthResponse?> RefreshAsync(RefreshRequest request, CancellationToken cancellationToken = default);
 
         /// <summary>Revokes the refresh token server-side.</summary>
-        Task<bool> LogoutAsync(string refreshToken, CancellationToken cancellationToken = default);
+        /// <param name="token">The caller's access token. The API authorises the request with it.</param>
+        /// <param name="refreshToken">The refresh token to revoke.</param>
+        /// <param name="cancellationToken">Token to cancel the request.</param>
+        /// <returns><c>true</c> when the API revoked the token.</returns>
+        Task<bool> LogoutAsync(string token, string refreshToken, CancellationToken cancellationToken = default);
     }
 
     /// <summary>
@@ -42,7 +46,7 @@ namespace MoviesWeb.Services
         public async Task<AuthResponse?> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
         {
             var response = await _httpClient.PostAsJsonAsync(
-                "auth/login", request, ApiJson.Options, cancellationToken);
+                "Auth/login", request, ApiJson.Options, cancellationToken);
 
             return await ReadAsync(response, cancellationToken);
         }
@@ -51,7 +55,7 @@ namespace MoviesWeb.Services
         public async Task<AuthResponse?> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken = default)
         {
             var response = await _httpClient.PostAsJsonAsync(
-                "auth/register", request, ApiJson.Options, cancellationToken);
+                "Auth/register", request, ApiJson.Options, cancellationToken);
 
             return await ReadAsync(response, cancellationToken);
         }
@@ -60,22 +64,27 @@ namespace MoviesWeb.Services
         public async Task<AuthResponse?> RefreshAsync(RefreshRequest request, CancellationToken cancellationToken = default)
         {
             var response = await _httpClient.PostAsJsonAsync(
-                "auth/refresh", request, ApiJson.Options, cancellationToken);
+                "Auth/refresh", request, ApiJson.Options, cancellationToken);
 
             return await ReadAsync(response, cancellationToken);
         }
 
         /// <inheritdoc />
-        public async Task<bool> LogoutAsync(string refreshToken, CancellationToken cancellationToken = default)
+        public async Task<bool> LogoutAsync(
+            string token,
+            string refreshToken,
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(refreshToken))
             {
                 return false;
             }
 
+            // The API authorises the logout with the access token and revokes
+            // the refresh token, so both have to be sent.
             var response = await _httpClient.PostAsJsonAsync(
-                "auth/logout",
-                new RefreshRequest { Token = string.Empty, RefreshToken = refreshToken },
+                "Auth/logout",
+                new RefreshRequest { Token = token ?? string.Empty, RefreshToken = refreshToken },
                 ApiJson.Options,
                 cancellationToken);
 

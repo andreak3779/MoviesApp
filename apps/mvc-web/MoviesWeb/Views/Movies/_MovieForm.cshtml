@@ -1,0 +1,107 @@
+@model MoviesWeb.ViewModels.MovieFormModel
+@{
+    // The edit form posts the movie's id; the create form does not have one.
+    var isEdit = Model.Id.HasValue;
+}
+
+<div class="form-shell">
+    <a class="back" asp-controller="Movies" asp-action="Index">&larr; Back to Movies</a>
+    <h1>@(isEdit ? "Edit Movie" : "Add Movie")</h1>
+
+    <form method="post" asp-controller="Movies" asp-action="@(isEdit ? "Edit" : "Create")">
+        @if (isEdit)
+        {
+            <input type="hidden" name="id" value="@Model.Id" />
+        }
+        <div asp-validation-summary="ModelOnly" class="field-error"></div>
+
+        <section class="section">
+            <h2 class="section-title">Details</h2>
+
+            <label>
+                <span>Title</span>
+                <input type="text" asp-for="Title" />
+            </label>
+            <span asp-validation-for="Title" class="field-error"></span>
+
+            <label class="form-narrow">
+                <span>Year</span>
+                <input type="number" asp-for="ReleaseYear" min="1888" max="2100" />
+            </label>
+            <span asp-validation-for="ReleaseYear" class="field-error"></span>
+
+            <label>
+                <span>Description</span>
+                <textarea asp-for="Description" rows="3"></textarea>
+            </label>
+        </section>
+
+        <section class="section">
+            <h2 class="section-title">Classification</h2>
+
+            <div class="form-row">
+                <label class="grow">
+                    <span>Genre</span>
+                    <select asp-for="FilmGenreId">
+                        <option value="">Select genre</option>
+                        @foreach (var genre in Model.Genres)
+                        {
+                            <option value="@genre.Id">@genre.Name</option>
+                        }
+                    </select>
+                </label>
+            </div>
+
+            <div class="form-row">
+                <label class="grow">
+                    <span>Format</span>
+                    <select asp-for="FormatId">
+                        <option value="">Select format</option>
+                        @foreach (var format in Model.Formats)
+                        {
+                            <option value="@format.Id">@format.Name</option>
+                        }
+                    </select>
+                </label>
+            </div>
+
+            <div class="form-row">
+                <label class="grow">
+                    <span>Media Type</span>
+                    <select asp-for="MediaTypeId">
+                        <option value="">Select media type</option>
+                        @foreach (var mediaType in Model.MediaTypes)
+                        {
+                            <option value="@mediaType.Id">@mediaType.Name</option>
+                        }
+                    </select>
+                </label>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2 class="section-title">Collection Info</h2>
+
+            <label class="check">
+                <input type="checkbox" asp-for="Criterion" />
+                Criterion Collection
+            </label>
+
+            <label class="form-narrow">
+                <span>Criterion Number</span>
+                <input type="number" asp-for="CriterionNumber" min="1" />
+            </label>
+            <span asp-validation-for="CriterionNumber" class="field-error"></span>
+
+            <label class="check">
+                <input type="checkbox" asp-for="Favourite" />
+                Favourite
+            </label>
+        </section>
+
+        <div class="form-actions">
+            <a class="btn secondary" asp-controller="Movies" asp-action="Index">Cancel</a>
+            <button type="submit" class="btn">Save Movie</button>
+        </div>
+    </form>
+</div>

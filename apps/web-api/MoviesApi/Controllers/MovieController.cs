@@ -31,13 +31,15 @@ namespace MoviesApi.Controllers
             ?? throw new UnauthorizedAccessException("User ID not found");
 
         /// <summary>
-        /// GET /api/v1/movies — search / filter / sort / page the caller's
+        /// GET /api/v1/Movie — search / filter / sort / page the caller's
         /// movies. All query parameters are optional. The mockup-shaped
         /// filter row maps to <c>search</c>, <c>genre</c>, <c>mediaType</c>,
         /// <c>format</c>, <c>sortBy</c>.
         /// </summary>
         [HttpGet]
         [Authorize(Policy = "UserOnly")]
+        [ProducesResponseType(typeof(PagedResponse<MovieResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<PagedResponse<MovieResponseDto>>> GetAll([FromQuery] MovieQuery query)
         {
             var userId = GetUserId();
@@ -50,6 +52,9 @@ namespace MoviesApi.Controllers
 
         [HttpGet("{id:guid}")]
         [Authorize(Policy = "UserOnly")]
+        [ProducesResponseType(typeof(MovieResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<MovieResponseDto>> GetById(Guid id)
         {
             var userId = GetUserId();
@@ -61,6 +66,9 @@ namespace MoviesApi.Controllers
 
         [HttpPost]
         [Authorize(Policy = "UserOnly")]
+        [ProducesResponseType(typeof(MovieResponseDto), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<MovieResponseDto>> Create([FromBody] MovieCreateDto dto)
         {
             if (!ModelState.IsValid)
@@ -111,6 +119,10 @@ namespace MoviesApi.Controllers
 
         [HttpPut("{id:guid}")]
         [Authorize(Policy = "UserOnly")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Update(Guid id, [FromBody] MovieUpdateDto dto)
         {
             if (!ModelState.IsValid)
@@ -134,56 +146,84 @@ namespace MoviesApi.Controllers
                 Format = existingMovie.MovieFormats.FirstOrDefault()?.Format.Name,
             };
 
-            if (dto.Title != null)
-                existingMovie.Title = dto.Title;
-            if (dto.ReleaseYear.HasValue)
-                existingMovie.ReleaseYear = dto.ReleaseYear.Value;
-            if (dto.Description != null)
-                existingMovie.Description = dto.Description;
-            if (dto.Favourite.HasValue)
-                existingMovie.Favourite = dto.Favourite.Value;
-            if (dto.Criterion.HasValue)
+            // Build a detached desired-state document rather than mutating the
+            // tracked entity. The repository diffs against its own copy, so
+            // handing it the instance it returned would let the two alias and
+            // wipe the link collections.
+            var desired = new Movie
             {
-                existingMovie.Criterion = dto.Criterion.Value;
-                if (!existingMovie.Criterion)
-                    existingMovie.CriterionNumber = null;
-            }
-            if (dto.CriterionNumber.HasValue && existingMovie.Criterion)
-                existingMovie.CriterionNumber = dto.CriterionNumber;
+                Id = id,
+                Title = dto.Title ?? existingMovie.Title,
+                ReleaseYear = dto.ReleaseYear ?? existingMovie.ReleaseYear,
+                Description = dto.Description ?? existingMovie.Description,
+                Favourite = dto.Favourite ?? existingMovie.Favourite,
+                Criterion = dto.Criterion ?? existingMovie.Criterion,
+                CriterionNumber = dto.CriterionNumber ?? existingMovie.CriterionNumber,
+                OwnerId = existingMovie.OwnerId,
+                CreatedAt = existingMovie.CreatedAt,
+                UpdatedAt = DateTime.UtcNow,
+            };
 
+            if (!desired.Criterion)
+                desired.CriterionNumber = null;
+
+            // Every collection carries the complete desired link set: the
+            // current links when the request does not mention that collection.
             if (dto.MediaTypeId.HasValue)
             {
-                existingMovie.MovieMediaTypes.Clear();
-                existingMovie.MovieMediaTypes.Add(new MovieMediaType { MediaTypeId = dto.MediaTypeId.Value });
+                desired.MovieMediaTypes = new List<MovieMediaType>
+                {
+                    new MovieMediaType { MediaTypeId = dto.MediaTypeId.Value },
+                };
             }
             else if (dto.MediaTypeIds != null)
             {
-                existingMovie.MovieMediaTypes.Clear();
-                foreach (var mt in dto.MediaTypeIds)
-                    existingMovie.MovieMediaTypes.Add(new MovieMediaType { MediaTypeId = mt });
+                desired.MovieMediaTypes = dto.MediaTypeIds
+                    .Select(mt => new MovieMediaType { MediaTypeId = mt })
+                    .ToList();
+            }
+            else
+            {
+                desired.MovieMediaTypes = existingMovie.MovieMediaTypes
+                    .Select(mm => new MovieMediaType { MediaTypeId = mm.MediaTypeId })
+                    .ToList();
             }
 
             if (dto.FilmGenreId.HasValue)
             {
-                existingMovie.MovieFilmGenres.Clear();
-                existingMovie.MovieFilmGenres.Add(new MovieFilmGenre { FilmGenreId = dto.FilmGenreId.Value });
+                desired.MovieFilmGenres = new List<MovieFilmGenre>
+                {
+                    new MovieFilmGenre { FilmGenreId = dto.FilmGenreId.Value },
+                };
             }
             else if (dto.FilmGenreIds != null)
             {
-                existingMovie.MovieFilmGenres.Clear();
-                foreach (var fg in dto.FilmGenreIds)
-                    existingMovie.MovieFilmGenres.Add(new MovieFilmGenre { FilmGenreId = fg });
+                desired.MovieFilmGenres = dto.FilmGenreIds
+                    .Select(fg => new MovieFilmGenre { FilmGenreId = fg })
+                    .ToList();
+            }
+            else
+            {
+                desired.MovieFilmGenres = existingMovie.MovieFilmGenres
+                    .Select(mfg => new MovieFilmGenre { FilmGenreId = mfg.FilmGenreId })
+                    .ToList();
             }
 
             if (dto.FormatId.HasValue)
             {
-                existingMovie.MovieFormats.Clear();
-                existingMovie.MovieFormats.Add(new MovieFormat { FormatId = dto.FormatId.Value });
+                desired.MovieFormats = new List<MovieFormat>
+                {
+                    new MovieFormat { FormatId = dto.FormatId.Value },
+                };
+            }
+            else
+            {
+                desired.MovieFormats = existingMovie.MovieFormats
+                    .Select(mf => new MovieFormat { FormatId = mf.FormatId })
+                    .ToList();
             }
 
-            existingMovie.UpdatedAt = DateTime.UtcNow;
-
-            var updatedMovie = await _repository.UpdateAsync(id, existingMovie);
+            var updatedMovie = await _repository.UpdateAsync(id, desired);
             if (updatedMovie == null)
                 return NotFound();
 
@@ -198,6 +238,9 @@ namespace MoviesApi.Controllers
 
         [HttpDelete("{id:guid}")]
         [Authorize(Policy = "UserOnly")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(Guid id)
         {
             var userId = GetUserId();

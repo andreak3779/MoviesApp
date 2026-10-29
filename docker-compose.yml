@@ -17,6 +17,16 @@ services:
       ASPNETCORE_URLS: http://+:8080
       ASPNETCORE_ENVIRONMENT: Production
       EnableHttpsRedirection: "false"
+      # The API refuses to start with the placeholder key that ships in
+      # appsettings.json. Supply a real one through the environment; never
+      # commit the value itself.
+      JwtSettings__SecretKey: ${JWT_SECRET_KEY:?set JWT_SECRET_KEY in your .env - see .env.example}
+      # The allowed-origin list only binds from indexed variables, so the
+      # entries are numbered rather than comma separated.
+      Cors__AllowedOrigins__0: ${API_ALLOWED_ORIGIN_0:-http://localhost:4000}
+      Cors__AllowedOrigins__1: ${API_ALLOWED_ORIGIN_1:-http://localhost:8080}
+      # Serve the Swagger UI. It is off by default outside Development.
+      EnableSwagger: ${ENABLE_SWAGGER:-true}
     ports:
       - "${WEB_API_PORT:-8081}:8080"
 

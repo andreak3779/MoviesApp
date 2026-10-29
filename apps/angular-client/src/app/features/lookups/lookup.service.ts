@@ -10,9 +10,9 @@ export type LookupDto = FilmGenreDto | MediaTypeDto | FormatDto;
 export type LookupKind = 'filmGenres' | 'mediaTypes' | 'formats';
 
 const PATHS: Record<LookupKind, string> = {
-  filmGenres: 'filmGenres',
-  mediaTypes: 'mediaTypes',
-  formats: 'formats',
+  filmGenres: 'FilmGenres',
+  mediaTypes: 'MediaTypes',
+  formats: 'Formats',
 };
 
 /**

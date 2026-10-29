@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   computed,
   inject,
@@ -17,6 +18,8 @@ import {
   selectAllMovies,
   selectMoviesError,
   selectMoviesLoading,
+  selectMoviesHasNextPage,
+  selectMoviesTotalPages,
 } from '../../store/movies/movies.selectors';
 import { LookupService } from '../../core/services/lookup.service';
 import { DeleteConfirmationComponent } from '../shared/delete-confirmation.component';
@@ -82,22 +85,22 @@ interface DeleteTarget {
       <p class="empty">No movies match your filters.</p>
     } @else {
       <ul class="grid" data-testid="movies-grid">
-        @for (m of movies(); track m.Id) {
-          <li class="card" [attr.data-id]="m.Id">
+        @for (m of movies(); track m.id) {
+          <li class="card" [attr.data-id]="m.id">
             <div class="card-header">
-              <div class="tile" [style.background]="tileColor(m.Id)">{{ tileLetter(m.Title) }}</div>
-              @if (m.Criterion) {
-                <span class="criterion">CRITERION #{{ m.CriterionNumber }}</span>
+              <div class="tile" [style.background]="tileColor(m.id)">{{ tileLetter(m.title) }}</div>
+              @if (m.criterion) {
+                <span class="criterion">CRITERION #{{ m.criterionNumber }}</span>
               }
             </div>
-            <h3>{{ m.Title }}</h3>
-            <div class="year">{{ m.ReleaseYear }}</div>
-            @if (m.Description) {
-              <p class="description">{{ m.Description }}</p>
+            <h3>{{ m.title }}</h3>
+            <div class="year">{{ m.releaseYear }}</div>
+            @if (m.description) {
+              <p class="description">{{ m.description }}</p>
             }
             <div class="badges">
-              @if (m.Genre) { <span class="badge">{{ m.Genre }}</span> }
-              @if (m.Favourite) { <span class="favourite">★ Favourite</span> }
+              @if (m.genre) { <span class="badge">{{ m.genre }}</span> }
+              @if (m.favourite) { <span class="favourite">★ Favourite</span> }
             </div>
             <div class="actions">
               <button type="button" class="link" (click)="openEdit(m)">Edit</button>
@@ -109,8 +112,8 @@ interface DeleteTarget {
 
       <footer class="paginator">
         <button type="button" class="secondary" [disabled]="page() <= 1" (click)="prevPage()">Previous</button>
-        <span>Page {{ page() }}</span>
-        <button type="button" class="secondary" [disabled]="!hasMore()" (click)="nextPage()">Next</button>
+        <span>Page {{ page() }} of {{ totalPages() }}</span>
+        <button type="button" class="secondary" [disabled]="!hasNextPage()" (click)="nextPage()">Next</button>
       </footer>
     }
 
@@ -192,6 +195,7 @@ interface DeleteTarget {
 export class MoviesListComponent implements OnInit {
   private readonly store = inject(Store);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
   protected readonly lookup = inject(LookupService);
 
   // Local UI state — signals
@@ -209,8 +213,15 @@ export class MoviesListComponent implements OnInit {
   readonly loading = this.store.selectSignal(selectMoviesLoading);
   readonly error = this.store.selectSignal(selectMoviesError);
 
+  /**
+   * Whether another page exists. The API says so in its paging metadata;
+   * counting the rows on screen would be wrong whenever the last page is
+   * short.
+   */
+  readonly hasNextPage = this.store.selectSignal(selectMoviesHasNextPage);
+  readonly totalPages = this.store.selectSignal(selectMoviesTotalPages);
+
   private readonly searchInput$ = new Subject<string>();
-  readonly hasMore = computed(() => this.movies().length >= this.pageSize);
 
   private readonly tileColors = [
     'oklch(40% 0.19 350)',
@@ -229,7 +240,7 @@ export class MoviesListComponent implements OnInit {
     this.store.dispatch(MovieActions.loadMovies({ query: this.snapshotQuery() }));
     void this.lookup.refreshAll();
     this.searchInput$
-      .pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed())
+      .pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.reload());
   }
 
@@ -251,7 +262,7 @@ export class MoviesListComponent implements OnInit {
   }
 
   nextPage(): void {
-    if (!this.hasMore()) return;
+    if (!this.hasNextPage()) return;
     this.page.update((p) => p + 1);
     this.store.dispatch(MovieActions.loadMovies({ query: this.snapshotQuery() }));
   }
@@ -261,11 +272,11 @@ export class MoviesListComponent implements OnInit {
   }
 
   openEdit(movie: Movie): void {
-    void this.router.navigate(['/movies', movie.Id, 'edit']);
+    void this.router.navigate(['/movies', movie.id, 'edit']);
   }
 
   requestDelete(movie: Movie): void {
-    this.deleteTarget.set({ id: movie.Id, title: movie.Title });
+    this.deleteTarget.set({ id: movie.id, title: movie.title });
   }
 
   confirmDelete(): void {

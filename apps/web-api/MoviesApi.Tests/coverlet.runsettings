@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat Code Coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <!--
+            The EF Core migrations and the model snapshot are generated code.
+            They are thousands of lines of schema plumbing that no test can
+            meaningfully exercise, so counting them would report a coverage
+            number that says nothing about the health of the application.
+
+            Nothing else is excluded. Adding an ExcludeByAttribute filter here
+            removes hand-written code from the denominator and makes the
+            reported percentage jump by roughly 20 points, which is exactly
+            the kind of flattering number a coverage gate must not be built
+            on.
+          -->
+          <ExcludeByFile>**/Migrations/*.cs</ExcludeByFile>
+          <IncludeTestAssembly>false</IncludeTestAssembly>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

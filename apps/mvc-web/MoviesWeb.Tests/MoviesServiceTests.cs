@@ -178,28 +178,27 @@ public class MoviesServiceTests
         Respond(HttpStatusCode.NoContent, string.Empty);
 
         var id = Guid.NewGuid();
-        var movie = new Movie
+        var request = new MovieUpdateRequest
         {
-            Id = id,
             Title = "Inception",
             ReleaseYear = 2010,
             Description = "Updated",
             Favourite = true,
             Criterion = true,
             CriterionNumber = 7,
-            FilmGenres = new List<FilmGenreDto> { new() { Id = 6, Name = "Science Fiction" } },
-            MediaTypes = new List<MediaTypeDto> { new() { Id = 2, Name = "Blu-Ray" } },
-            Formats = new List<FormatDto> { new() { Id = 1, Name = "Movie" } }
+            FilmGenreId = 6,
+            MediaTypeId = 2,
+            FormatId = 1
         };
 
         var service = CreateService();
-        await service.UpdateMovieAsync(movie);
+        await service.UpdateMovieAsync(id, request);
 
-        var request = SingleRequest();
-        Assert.Equal(HttpMethod.Put, request.Method);
-        Assert.Equal($"/api/v1/Movie/{id}", request.RequestUri!.AbsolutePath);
+        var sent = SingleRequest();
+        Assert.Equal(HttpMethod.Put, sent.Method);
+        Assert.Equal($"/api/v1/Movie/{id}", sent.RequestUri!.AbsolutePath);
 
-        var body = await request.Content!.ReadAsStringAsync();
+        var body = await sent.Content!.ReadAsStringAsync();
         using var doc = JsonDocument.Parse(body);
         var root = doc.RootElement;
         Assert.Equal("Inception", root.GetProperty("title").GetString());
@@ -219,7 +218,7 @@ public class MoviesServiceTests
         Respond(HttpStatusCode.Created, """{"id":"22222222-2222-2222-2222-222222222222","title":"Inception","releaseYear":2010,"ownerId":"user-1","createdAt":"2026-01-01T00:00:00Z","favourite":false,"criterion":false,"mediaTypes":[],"filmGenres":[],"formats":[]}""");
 
         var service = CreateService();
-        var created = await service.CreateMovieAsync(new Movie
+        var created = await service.CreateMovieAsync(new MovieCreateRequest
         {
             Title = "Inception",
             ReleaseYear = 2010
@@ -257,6 +256,36 @@ public class MoviesServiceTests
         Assert.Equal(1, genres[0].Id);
 
         var requestUri = SingleRequest().RequestUri!;
-        Assert.Equal("/api/v1/filmGenres", requestUri.AbsolutePath);
+        Assert.Equal("/api/v1/FilmGenres", requestUri.AbsolutePath);
+    }
+
+    [Fact]
+    public async Task GetMediaTypesAsync_UsesMediaTypesRoute()
+    {
+        Respond(HttpStatusCode.OK, """[{"id":1,"name":"Blu-Ray","description":null},{"id":2,"name":"VHS","description":null}]""");
+
+        var service = CreateService();
+        var mediaTypes = await service.GetMediaTypesAsync();
+
+        Assert.Equal(2, mediaTypes.Count);
+        Assert.Equal("Blu-Ray", mediaTypes[0].Name);
+
+        var requestUri = SingleRequest().RequestUri!;
+        Assert.Equal("/api/v1/MediaTypes", requestUri.AbsolutePath);
+    }
+
+    [Fact]
+    public async Task GetFormatsAsync_UsesFormatsRoute()
+    {
+        Respond(HttpStatusCode.OK, """[{"id":1,"name":"Movie","description":null},{"id":2,"name":"TV","description":null}]""");
+
+        var service = CreateService();
+        var formats = await service.GetFormatsAsync();
+
+        Assert.Equal(2, formats.Count);
+        Assert.Equal("Movie", formats[0].Name);
+
+        var requestUri = SingleRequest().RequestUri!;
+        Assert.Equal("/api/v1/Formats", requestUri.AbsolutePath);
     }
 }

@@ -6,39 +6,43 @@ import {
   selectMoviesTotal,
   selectSelectedMovie,
   selectFavouriteMovies,
+  selectMoviesHasNextPage,
+  selectMoviesTotalPages,
+  selectMoviesPageNumber,
+  selectMoviesTotalCount,
 } from './movies.selectors';
 import { AppState } from '../../store';
 import { Movie } from '../../models/movie';
 
 const movie1: Movie = {
-  Id: '00000000-0000-0000-0000-000000000001',
-  Title: 'The Matrix',
-  ReleaseYear: 1999,
-  Description: '',
-  Favourite: false,
-  Criterion: false,
-  CriterionNumber: null,
-  OwnerId: 'user-1',
-  CreatedAt: '2026-01-01T00:00:00Z',
-  UpdatedAt: null,
-  Genre: 'Sci-Fi',
-  MediaType: 'Blu-Ray',
-  Format: 'Movie',
-  FilmGenres: [],
-  MediaTypes: [],
-  Formats: [],
+  id: '00000000-0000-0000-0000-000000000001',
+  title: 'The Matrix',
+  releaseYear: 1999,
+  description: '',
+  favourite: false,
+  criterion: false,
+  criterionNumber: null,
+  ownerId: 'user-1',
+  createdAt: '2026-01-01T00:00:00Z',
+  updatedAt: null,
+  genre: 'Sci-Fi',
+  mediaType: 'Blu-Ray',
+  format: 'Movie',
+  filmGenres: [],
+  mediaTypes: [],
+  formats: [],
 };
 
 const movie2: Movie = {
   ...movie1,
-  Id: '00000000-0000-0000-0000-000000000002',
-  Title: 'Dark',
-  ReleaseYear: 2017,
-  Genre: 'Thriller',
-  Format: 'TVSeries',
-  Criterion: true,
-  CriterionNumber: 1,
-  Favourite: true,
+  id: '00000000-0000-0000-0000-000000000002',
+  title: 'Dark',
+  releaseYear: 2017,
+  genre: 'Thriller',
+  format: 'TVSeries',
+  criterion: true,
+  criterionNumber: 1,
+  favourite: true,
 };
 
 function buildState(overrides: Partial<MoviesState> = {}): AppState {
@@ -76,6 +80,36 @@ describe('Movies Selectors', () => {
     });
   });
 
+  describe('paging selectors', () => {
+    const paged = {
+      pageNumber: 2,
+      pageSize: 6,
+      totalCount: 13,
+      totalPages: 3,
+      hasPrevious: true,
+      hasNext: true,
+    };
+
+    it('should report that another page exists', () => {
+      expect(selectMoviesHasNextPage(buildState({ page: paged }))).toBe(true);
+      expect(
+        selectMoviesHasNextPage(buildState({ page: { ...paged, hasNext: false } })),
+      ).toBe(false);
+    });
+
+    it('should report the total number of pages', () => {
+      expect(selectMoviesTotalPages(buildState({ page: paged }))).toBe(3);
+    });
+
+    it('should report the current page number', () => {
+      expect(selectMoviesPageNumber(buildState({ page: paged }))).toBe(2);
+    });
+
+    it('should report the total number of movies', () => {
+      expect(selectMoviesTotalCount(buildState({ page: paged }))).toBe(13);
+    });
+  });
+
   describe('selectSelectedMovie', () => {
     it('should return the movie matching selectedId', () => {
       const result = selectSelectedMovie(buildState({ selectedId: '00000000-0000-0000-0000-000000000002' }));
@@ -89,10 +123,10 @@ describe('Movies Selectors', () => {
   });
 
   describe('selectFavouriteMovies', () => {
-    it('should return only movies where Favourite is true', () => {
+    it('should return only movies where favourite is true', () => {
       const result = selectFavouriteMovies(buildState());
       expect(result).toHaveLength(1);
-      expect(result[0].Id).toBe('00000000-0000-0000-0000-000000000002');
+      expect(result[0].id).toBe('00000000-0000-0000-0000-000000000002');
     });
   });
 });

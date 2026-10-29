@@ -7,6 +7,14 @@
     <RootNamespace>MoviesApi</RootNamespace>
     <AssemblyName>MoviesApi</AssemblyName>
     <UserSecretsId>98093ef9-6027-4ae2-9ef8-5c7017fab1f1</UserSecretsId>
+    <!--
+      The XML comments on controllers, DTOs and services are rendered in the
+      Swagger UI, so the documentation file has to be produced at build time.
+      CS1591 is suppressed because not every public member carries a comment;
+      the ones that do are the ones that show up in the API contract.
+    -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\MoviesApiData\MoviesApiData.csproj" />

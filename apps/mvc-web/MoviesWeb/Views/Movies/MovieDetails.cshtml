@@ -3,102 +3,79 @@
     ViewData["Title"] = "Movie Details";
 }
 
-<div class="container mt-4">
-    <div class="mb-3">
-        <a asp-controller="Movies" asp-action="Index" class="text-decoration-none">&larr; Back to list</a>
+<div class="detail-shell">
+    <a class="back" asp-controller="Movies" asp-action="Index">&larr; Back to Movies</a>
+
+    <div class="detail-header">
+        <div class="tile" style="background:@MoviesWeb.ViewModels.MovieTile.Color(Model.Id)">@MoviesWeb.ViewModels.MovieTile.Letter(Model.Title)</div>
+        <div>
+            <h1>@Model.Title</h1>
+            <div class="year">@Model.ReleaseYear</div>
+        </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-8">
-            <h1 class="h3">@Model.Title</h1>
+    @if (!string.IsNullOrWhiteSpace(Model.Description))
+    {
+        <p class="description">@Model.Description</p>
+    }
 
-            <dl class="row">
-                <dt class="col-sm-3">Release year</dt>
-                <dd class="col-sm-9">@Model.ReleaseYear</dd>
+    <div class="badges">
+        @if (!string.IsNullOrWhiteSpace(Model.Genre))
+        {
+            <span class="badge">@Model.Genre</span>
+        }
+        @if (!string.IsNullOrWhiteSpace(Model.MediaType))
+        {
+            <span class="badge">@Model.MediaType</span>
+        }
+        @if (!string.IsNullOrWhiteSpace(Model.Format))
+        {
+            <span class="badge">@Model.Format</span>
+        }
+        @if (Model.Criterion)
+        {
+            <span class="criterion-badge">CRITERION #@Model.CriterionNumber</span>
+        }
+        @if (Model.Favourite)
+        {
+            <span class="badge favourite">★ Favourite</span>
+        }
+    </div>
 
-                <dt class="col-sm-3">Genre</dt>
-                <dd class="col-sm-9">@(Model.Genre ?? "—")</dd>
+    <section class="section">
+        <h2 class="section-title">Details</h2>
+        <dl class="detail-list">
+            <dt>Release year</dt>
+            <dd>@Model.ReleaseYear</dd>
 
-                <dt class="col-sm-3">Media type</dt>
-                <dd class="col-sm-9">@(Model.MediaType ?? "—")</dd>
+            <dt>Genre</dt>
+            <dd>@(Model.Genre ?? "—")</dd>
 
-                <dt class="col-sm-3">Format</dt>
-                <dd class="col-sm-9">@(Model.Format ?? "—")</dd>
+            <dt>Media type</dt>
+            <dd>@(Model.MediaType ?? "—")</dd>
 
-                @if (Model.Criterion)
-                {
-                    <dt class="col-sm-3">Criterion number</dt>
-                    <dd class="col-sm-9">@Model.CriterionNumber</dd>
-                }
+            <dt>Format</dt>
+            <dd>@(Model.Format ?? "—")</dd>
 
-                @if (Model.Favourite)
-                {
-                    <dt class="col-sm-3">Favourite</dt>
-                    <dd class="col-sm-9">★ Yes</dd>
-                }
+            @if (Model.Criterion)
+            {
+                <dt>Criterion number</dt>
+                <dd>@Model.CriterionNumber</dd>
+            }
 
-                <dt class="col-sm-3">Description</dt>
-                <dd class="col-sm-9">@(Model.Description ?? "—")</dd>
-            </dl>
-        </div>
+            @if (Model.Favourite)
+            {
+                <dt>Favourite</dt>
+                <dd>★ Yes</dd>
+            }
 
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-body">
-                    <h2 class="h6 text-uppercase text-muted">Genres</h2>
-                    @if (Model.FilmGenres.Count == 0)
-                    {
-                        <p class="text-muted mb-0">None</p>
-                    }
-                    else
-                    {
-                        <ul class="list-unstyled mb-0">
-                            @foreach (var genre in Model.FilmGenres)
-                            {
-                                <li>@genre.Name</li>
-                            }
-                        </ul>
-                    }
-                </div>
-            </div>
+            <dt>Added</dt>
+            <dd>@Model.CreatedAt.ToString("d MMMM yyyy")</dd>
+        </dl>
+    </section>
 
-            <div class="card mt-3">
-                <div class="card-body">
-                    <h2 class="h6 text-uppercase text-muted">Media types</h2>
-                    @if (Model.MediaTypes.Count == 0)
-                    {
-                        <p class="text-muted mb-0">None</p>
-                    }
-                    else
-                    {
-                        <ul class="list-unstyled mb-0">
-                            @foreach (var mediaType in Model.MediaTypes)
-                            {
-                                <li>@mediaType.Name</li>
-                            }
-                        </ul>
-                    }
-                </div>
-            </div>
-
-            <div class="card mt-3">
-                <div class="card-body">
-                    <h2 class="h6 text-uppercase text-muted">Formats</h2>
-                    @if (Model.Formats.Count == 0)
-                    {
-                        <p class="text-muted mb-0">None</p>
-                    }
-                    else
-                    {
-                        <ul class="list-unstyled mb-0">
-                            @foreach (var format in Model.Formats)
-                            {
-                                <li>@format.Name</li>
-                            }
-                        </ul>
-                    }
-                </div>
-            </div>
-        </div>
+    <div class="form-actions">
+        <a class="btn secondary" asp-controller="Movies" asp-action="Index">Back</a>
+        <a class="btn" asp-controller="Movies" asp-action="Edit" asp-route-id="@Model.Id">Edit</a>
     </div>
 </div>

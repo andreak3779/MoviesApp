@@ -13,6 +13,9 @@ import {
 /**
  * HTTP client for the Movies resource on the Web API. Returns Observables
  * to match the existing NgRx effects shape.
+ *
+ * The route is the **singular** {@code /Movie}: the API's controller is
+ * named {@code MovieController}, so {@code /api/v1/movies} is a 404.
  */
 @Injectable({ providedIn: 'root' })
 export class MovieService {
@@ -25,23 +28,23 @@ export class MovieService {
       if (value === undefined || value === null || value === '') continue;
       params = params.set(this.camelToPascal(key), String(value));
     }
-    return this.http.get<PagedResponse<Movie>>(`${this.baseUrl}/movies`, { params });
+    return this.http.get<PagedResponse<Movie>>(`${this.baseUrl}/Movie`, { params });
   }
 
   getById(id: string): Observable<Movie> {
-    return this.http.get<Movie>(`${this.baseUrl}/movies/${id}`);
+    return this.http.get<Movie>(`${this.baseUrl}/Movie/${id}`);
   }
 
   create(payload: MovieCreatePayload): Observable<Movie> {
-    return this.http.post<Movie>(`${this.baseUrl}/movies`, payload);
+    return this.http.post<Movie>(`${this.baseUrl}/Movie`, payload);
   }
 
   update(id: string, payload: MovieUpdatePayload): Observable<void> {
-    return this.http.put<void>(`${this.baseUrl}/movies/${id}`, payload);
+    return this.http.put<void>(`${this.baseUrl}/Movie/${id}`, payload);
   }
 
   remove(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/movies/${id}`);
+    return this.http.delete<void>(`${this.baseUrl}/Movie/${id}`);
   }
 
   /**

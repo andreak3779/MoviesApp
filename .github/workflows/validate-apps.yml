@@ -28,6 +28,9 @@ concurrency:
 
 env:
   DOTNET_NOLOGO: true
+  # Every app has to reach this line coverage. The gate lives in
+  # scripts/check-coverage.py and is enforced per app below.
+  COVERAGE_THRESHOLD: 70
 
 jobs:
   changes:
@@ -108,7 +111,23 @@ jobs:
       - name: Run Angular tests
         env:
           CI: true
-        run: npm test
+        run: npm run test:coverage
+
+      - name: Enforce the coverage gate
+        if: always()
+        run: >
+          python3 ../../scripts/check-coverage.py
+          coverage/movies-app/coverage-summary.json
+          "$COVERAGE_THRESHOLD"
+          angular-client
+
+      - name: Publish the coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: angular-client-coverage
+          path: apps/angular-client/coverage
+          retention-days: 14
 
       - name: Build Angular app
         env:
@@ -147,7 +166,28 @@ jobs:
 
       - name: Test MVC solution
         working-directory: apps/mvc-web
-        run: dotnet test MoviesWeb.sln --configuration Release --no-build --verbosity normal
+        run: >
+          dotnet test MoviesWeb.sln
+          --configuration Release
+          --no-build
+          --verbosity normal
+          --collect:"XPlat Code Coverage"
+          --settings MoviesWeb.Tests/coverlet.runsettings
+          --results-directory ./coverage
+
+      - name: Enforce the coverage gate
+        working-directory: apps/mvc-web
+        run: |
+          report="$(find ./coverage -name 'coverage.cobertura.xml' | head -1)"
+          python3 ../../scripts/check-coverage.py "$report" "$COVERAGE_THRESHOLD" mvc-web
+
+      - name: Publish the coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mvc-web-coverage
+          path: apps/mvc-web/coverage
+          retention-days: 14
 
   web-api:
     name: web-api
@@ -181,4 +221,25 @@ jobs:
 
       - name: Test Web API solution
         working-directory: apps/web-api
-        run: dotnet test MoviesAPI.sln --configuration Release --no-build --verbosity normal
+        run: >-
+          dotnet test MoviesAPI.sln
+          --configuration Release
+          --no-build
+          --verbosity normal
+          --collect:"XPlat Code Coverage"
+          --settings MoviesApi.Tests/coverlet.runsettings
+          --results-directory ./coverage
+
+      - name: Enforce the coverage gate
+        working-directory: apps/web-api
+        run: |
+          report="$(find ./coverage -name 'coverage.cobertura.xml' | head -1)"
+          python3 ../../scripts/check-coverage.py "$report" "$COVERAGE_THRESHOLD" web-api
+
+      - name: Publish the coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-api-coverage
+          path: apps/web-api/coverage
+          retention-days: 14

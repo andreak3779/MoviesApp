@@ -28,14 +28,24 @@ public class MovieListModel
     public int TotalCount { get; set; }
 
     /// <summary>
-    /// Gets a value indicating whether there is a previous page of results.
+    /// Gets or sets the total number of pages.
     /// </summary>
-    public bool HasPreviousPage => PageNumber > 1;
+    public int TotalPages { get; set; }
 
     /// <summary>
-    /// Gets a value indicating whether there is a next page of results.
+    /// Gets or sets a value indicating whether a previous page of results exists.
     /// </summary>
-    public bool HasNextPage => PageSize > 0 && (long)PageNumber * PageSize < TotalCount;
+    /// <remarks>
+    /// This comes from the API's paging envelope rather than being derived
+    /// from the item count: a short last page would otherwise be mistaken
+    /// for the end of the collection.
+    /// </remarks>
+    public bool HasPreviousPage { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether a next page of results exists.
+    /// </summary>
+    public bool HasNextPage { get; set; }
 
     /// <summary>
     /// Gets or sets the genres available for the filter dropdown.

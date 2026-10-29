@@ -3,161 +3,144 @@
     ViewData["Title"] = "Movies";
 }
 
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="h3 mb-0">Movies</h1>
-        <span class="text-muted">@Model.TotalCount total</span>
+<div class="page-header">
+    <h1>Movies</h1>
+    <a class="btn" asp-controller="Movies" asp-action="Create">+ Add Movie</a>
+</div>
+
+@if (!string.IsNullOrEmpty(TempData["Error"] as string))
+{
+    <div class="alert error" role="alert">@TempData["Error"]</div>
+}
+@if (!string.IsNullOrEmpty(TempData["Message"] as string))
+{
+    <div class="alert success" role="alert">@TempData["Message"]</div>
+}
+
+<form method="get" asp-controller="Movies" asp-action="Index" class="filters">
+    <input type="search" name="search" value="@Model.Search" placeholder="Search movies..." aria-label="Search movies" />
+
+    <select name="genre" aria-label="Filter by genre">
+        <option value="">All genres</option>
+        @foreach (var genre in Model.Genres)
+        {
+            <option value="@genre.Name" selected="@(Model.Genre == genre.Name)">@genre.Name</option>
+        }
+    </select>
+
+    <select name="format" aria-label="Filter by format">
+        <option value="">All formats</option>
+        @foreach (var format in Model.Formats)
+        {
+            <option value="@format.Name" selected="@(Model.Format == format.Name)">@format.Name</option>
+        }
+    </select>
+
+    <select name="mediaType" aria-label="Filter by media type">
+        <option value="">All media types</option>
+        @foreach (var mediaType in Model.MediaTypes)
+        {
+            <option value="@mediaType.Name" selected="@(Model.MediaType == mediaType.Name)">@mediaType.Name</option>
+        }
+    </select>
+
+    <select name="sortBy" aria-label="Sort by">
+        <option value="year" selected="@(Model.SortBy != "title")">Sort: Year</option>
+        <option value="title" selected="@(Model.SortBy == "title")">Sort: Title</option>
+    </select>
+
+    <button type="submit" class="btn small">Apply</button>
+</form>
+
+@if (Model.Movies.Count == 0)
+{
+    <div class="empty">
+        <p>No movies match your filters.</p>
     </div>
+}
+else
+{
+    <ul class="movie-grid">
+        @foreach (var movie in Model.Movies)
+        {
+            <li class="movie-card">
+                <div class="card-header">
+                    <div class="tile" style="background:@MovieTile.Color(movie.Id)">@MovieTile.Letter(movie.Title)</div>
+                    @if (movie.Criterion)
+                    {
+                        <span class="criterion-badge">CRITERION #@movie.CriterionNumber</span>
+                    }
+                </div>
 
-    @if (!string.IsNullOrEmpty(TempData["Error"] as string))
-    {
-        <div class="alert alert-danger" role="alert">@TempData["Error"]</div>
-    }
-    @if (!string.IsNullOrEmpty(TempData["Message"] as string))
-    {
-        <div class="alert alert-success" role="alert">@TempData["Message"]</div>
-    }
+                <div>
+                    <h3>
+                        <a asp-controller="Movies" asp-action="MovieDetails" asp-route-id="@movie.Id">@movie.Title</a>
+                    </h3>
+                    <div class="year">@movie.ReleaseYear</div>
+                </div>
 
-    <form method="get" asp-controller="Movies" asp-action="Index" class="row g-2 mb-4">
-        <div class="col-md-3">
-            <input type="search" name="search" value="@Model.Search" class="form-control"
-                   placeholder="Search titles…" aria-label="Search titles" />
-        </div>
-        <div class="col-md-2">
-            <select name="genre" class="form-select" aria-label="Filter by genre">
-                <option value="">All genres</option>
-                @foreach (var genre in Model.Genres)
+                @if (!string.IsNullOrWhiteSpace(movie.Description))
                 {
-                    <option value="@genre.Name" selected="@(Model.Genre == genre.Name)">@genre.Name</option>
+                    <p class="description">@movie.Description</p>
                 }
-            </select>
-        </div>
-        <div class="col-md-2">
-            <select name="mediaType" class="form-select" aria-label="Filter by media type">
-                <option value="">All media types</option>
-                @foreach (var mediaType in Model.MediaTypes)
-                {
-                    <option value="@mediaType.Name" selected="@(Model.MediaType == mediaType.Name)">@mediaType.Name</option>
-                }
-            </select>
-        </div>
-        <div class="col-md-2">
-            <select name="format" class="form-select" aria-label="Filter by format">
-                <option value="">All formats</option>
-                @foreach (var format in Model.Formats)
-                {
-                    <option value="@format.Name" selected="@(Model.Format == format.Name)">@format.Name</option>
-                }
-            </select>
-        </div>
-        <div class="col-md-2">
-            <select name="sortBy" class="form-select" aria-label="Sort by">
-                <option value="year" selected="@(Model.SortBy == "year")">Sort: Year</option>
-                <option value="title" selected="@(Model.SortBy == "title")">Sort: Title</option>
-            </select>
-        </div>
-        <div class="col-md-1">
-            <select name="sortDir" class="form-select" aria-label="Sort direction">
-                <option value="desc" selected="@(Model.SortDir != "asc")">Desc</option>
-                <option value="asc" selected="@(Model.SortDir == "asc")">Asc</option>
-            </select>
-        </div>
-        <div class="col-md-2 d-grid">
-            <button type="submit" class="btn btn-primary">Apply</button>
-        </div>
-    </form>
 
-    @if (Model.Movies.Count == 0)
+                <div class="badges">
+                    @if (!string.IsNullOrWhiteSpace(movie.Genre))
+                    {
+                        <span class="badge">@movie.Genre</span>
+                    }
+                    @if (movie.Favourite)
+                    {
+                        <span class="badge favourite">★ Favourite</span>
+                    }
+                </div>
+
+                <div class="card-actions">
+                    <a class="btn link" asp-controller="Movies" asp-action="Edit" asp-route-id="@movie.Id">Edit</a>
+                    <form method="post" asp-controller="Movies" asp-action="Delete" asp-route-id="@movie.Id"
+                          onsubmit="return confirm('Delete this movie?');">
+                        <button type="submit" class="btn link danger">Delete</button>
+                    </form>
+                </div>
+            </li>
+        }
+    </ul>
+}
+
+<nav class="paginator" aria-label="Movie pages">
+    @if (Model.HasPreviousPage)
     {
-        <p class="text-muted">No movies found.</p>
+        <a class="btn secondary small"
+           asp-controller="Movies"
+           asp-action="Index"
+           asp-route-page="@(Model.PageNumber - 1)"
+           asp-route-search="@Model.Search"
+           asp-route-genre="@Model.Genre"
+           asp-route-mediaType="@Model.MediaType"
+           asp-route-format="@Model.Format"
+           asp-route-sortBy="@Model.SortBy">Previous</a>
     }
     else
     {
-        <div class="table-responsive">
-            <table class="table table-striped align-middle">
-                <thead>
-                    <tr>
-                        <th scope="col">Title</th>
-                        <th scope="col">Year</th>
-                        <th scope="col">Genre</th>
-                        <th scope="col">Media type</th>
-                        <th scope="col">Format</th>
-                        <th scope="col">Flags</th>
-                        <th scope="col"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var movie in Model.Movies)
-                    {
-                        <tr>
-                            <td>
-                                <a asp-controller="Movies" asp-action="MovieDetails" asp-route-id="@movie.Id">
-                                    @movie.Title
-                                </a>
-                            </td>
-                            <td>@movie.ReleaseYear</td>
-                            <td>@(movie.Genre ?? "—")</td>
-                            <td>@(movie.MediaType ?? "—")</td>
-                            <td>@(movie.Format ?? "—")</td>
-                            <td>
-                                @if (movie.Favourite)
-                                {
-                                    <span class="badge text-bg-warning">★ Favourite</span>
-                                }
-                                @if (movie.Criterion)
-                                {
-                                    <span class="badge text-bg-info">Criterion @movie.CriterionNumber</span>
-                                }
-                            </td>
-                            <td class="text-end">
-                                <form method="post" asp-controller="Movies" asp-action="Delete" asp-route-id="@movie.Id"
-                                      onsubmit="return confirm('Delete this movie?');">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-                                </form>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-
-        @if (Model.HasPreviousPage || Model.HasNextPage)
-        {
-            <nav aria-label="Movie pages">
-                <ul class="pagination">
-                    @if (Model.HasPreviousPage)
-                    {
-                        <li class="page-item">
-                            <a class="page-link"
-                               asp-action="Index"
-                               asp-route-page="@(Model.PageNumber - 1)"
-                               asp-route-search="@Model.Search"
-                               asp-route-genre="@Model.Genre"
-                               asp-route-mediaType="@Model.MediaType"
-                               asp-route-format="@Model.Format"
-                               asp-route-sortBy="@Model.SortBy"
-                               asp-route-sortDir="@Model.SortDir">Previous</a>
-                        </li>
-                    }
-                    <li class="page-item disabled">
-                        <span class="page-link">Page @Model.PageNumber</span>
-                    </li>
-                    @if (Model.HasNextPage)
-                    {
-                        <li class="page-item">
-                            <a class="page-link"
-                               asp-action="Index"
-                               asp-route-page="@(Model.PageNumber + 1)"
-                               asp-route-search="@Model.Search"
-                               asp-route-genre="@Model.Genre"
-                               asp-route-mediaType="@Model.MediaType"
-                               asp-route-format="@Model.Format"
-                               asp-route-sortBy="@Model.SortBy"
-                               asp-route-sortDir="@Model.SortDir">Next</a>
-                        </li>
-                    }
-                </ul>
-            </nav>
-        }
+        <button class="btn secondary small" disabled>Previous</button>
     }
-</div>
+
+    <span>Page @Model.PageNumber of @Math.Max(Model.TotalPages, 1)</span>
+
+    @if (Model.HasNextPage)
+    {
+        <a class="btn secondary small"
+           asp-controller="Movies"
+           asp-action="Index"
+           asp-route-page="@(Model.PageNumber + 1)"
+           asp-route-search="@Model.Search"
+           asp-route-genre="@Model.Genre"
+           asp-route-mediaType="@Model.MediaType"
+           asp-route-format="@Model.Format"
+           asp-route-sortBy="@Model.SortBy">Next</a>
+    }
+    else
+    {
+        <button class="btn secondary small" disabled>Next</button>
+    }
+</nav>

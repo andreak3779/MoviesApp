@@ -1,36 +1,45 @@
-import { moviesReducer, initialState, adapter } from './movies.reducer';
+import { moviesReducer, initialState, adapter, initialPage } from './movies.reducer';
 import { MovieActions } from './movies.actions';
 import { Movie } from '../../models/movie';
 
 const movie1: Movie = {
-  Id: '00000000-0000-0000-0000-000000000001',
-  Title: 'The Matrix',
-  ReleaseYear: 1999,
-  Description: '',
-  Favourite: false,
-  Criterion: false,
-  CriterionNumber: null,
-  OwnerId: 'user-1',
-  CreatedAt: '2026-01-01T00:00:00Z',
-  UpdatedAt: null,
-  Genre: 'Sci-Fi',
-  MediaType: 'Blu-Ray',
-  Format: 'Movie',
-  FilmGenres: [],
-  MediaTypes: [],
-  Formats: [],
+  id: '00000000-0000-0000-0000-000000000001',
+  title: 'The Matrix',
+  releaseYear: 1999,
+  description: '',
+  favourite: false,
+  criterion: false,
+  criterionNumber: null,
+  ownerId: 'user-1',
+  createdAt: '2026-01-01T00:00:00Z',
+  updatedAt: null,
+  genre: 'Sci-Fi',
+  mediaType: 'Blu-Ray',
+  format: 'Movie',
+  filmGenres: [],
+  mediaTypes: [],
+  formats: [],
 };
 
 const movie2: Movie = {
   ...movie1,
-  Id: '00000000-0000-0000-0000-000000000002',
-  Title: 'Dark',
-  ReleaseYear: 2017,
-  Genre: 'Thriller',
-  Format: 'TVSeries',
-  Criterion: true,
-  CriterionNumber: 1,
-  Favourite: true,
+  id: '00000000-0000-0000-0000-000000000002',
+  title: 'Dark',
+  releaseYear: 2017,
+  genre: 'Thriller',
+  format: 'TVSeries',
+  criterion: true,
+  criterionNumber: 1,
+  favourite: true,
+};
+
+const page = {
+  pageNumber: 2,
+  pageSize: 6,
+  totalCount: 13,
+  totalPages: 3,
+  hasPrevious: true,
+  hasNext: true,
 };
 
 describe('moviesReducer', () => {
@@ -54,11 +63,19 @@ describe('moviesReducer', () => {
     it('should populate entities and clear loading', () => {
       const loaded = moviesReducer(
         { ...initialState, loading: true },
-        MovieActions.loadMoviesSuccess({ movies: [movie1, movie2] }),
+        MovieActions.loadMoviesSuccess({ movies: [movie1, movie2], page: initialPage }),
       );
       expect(loaded.loading).toBe(false);
       expect(loaded.ids).toEqual(['00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002']);
       expect(loaded.entities['00000000-0000-0000-0000-000000000001']).toEqual(movie1);
+    });
+
+    it('should store the paging metadata', () => {
+      const loaded = moviesReducer(
+        initialState,
+        MovieActions.loadMoviesSuccess({ movies: [movie1], page }),
+      );
+      expect(loaded.page).toEqual(page);
     });
   });
 
@@ -100,12 +117,12 @@ describe('moviesReducer', () => {
   describe('updateMovieSuccess', () => {
     it('should replace the existing movie', () => {
       const withMovie = adapter.addOne(movie1, initialState);
-      const updated = { ...movie1, Title: 'The Matrix Reloaded' };
+      const updated = { ...movie1, title: 'The Matrix Reloaded' };
       const state = moviesReducer(
         withMovie,
         MovieActions.updateMovieSuccess({ movie: updated }),
       );
-      expect(state.entities['00000000-0000-0000-0000-000000000001']!.Title).toBe('The Matrix Reloaded');
+      expect(state.entities['00000000-0000-0000-0000-000000000001']!.title).toBe('The Matrix Reloaded');
     });
   });
 

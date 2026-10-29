@@ -1,5 +1,7 @@
+using System.Reflection;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MoviesApiData.Data;
 using MoviesApi.Middleware;
+using MoviesApi.Configuration;
 using MoviesApiDomain.Models;
 using MoviesApiData.Repositories;
 using MoviesApi.Services;
@@ -89,14 +92,36 @@ builder.Services.AddAuthorization(options =>
 // Add Swagger with JWT support
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "MoviesApi", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "MoviesApi",
+        Version = "v1",
+        Description = "MoviesApp Web API. All movie endpoints require a bearer token; " +
+                      "sign in through POST /api/v1/Auth/login and paste the token into " +
+                      "the Authorize dialog in the Swagger UI."
+    });
+
+    // Render the XML comments on the controllers and DTOs as endpoint and
+    // schema descriptions. The file only exists when the project was built
+    // with GenerateDocumentationFile, so the check keeps `dotnet run` working
+    // against a published output that was trimmed.
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        c.IncludeXmlComments(xmlPath);
+    }
+
+    // An http/bearer scheme (rather than apiKey) is what makes the Swagger
+    // UI send `Authorization: Bearer <token>` on the Authorize button.
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token",
         Name = "Authorization",
         In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
     });
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
@@ -125,19 +150,7 @@ var allowedOrigins = builder.Configuration
 
 if (builder.Environment.IsProduction())
 {
-    var placeholders = new[] { "https://your-production-domain.com", "http://localhost" };
-    foreach (var origin in allowedOrigins)
-    {
-        foreach (var placeholder in placeholders)
-        {
-            if (origin.StartsWith(placeholder, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new InvalidOperationException(
-                    $"Cors:AllowedOrigins contains the placeholder value '{origin}'. " +
-                    "Configure real origins before starting the API in Production.");
-            }
-        }
-    }
+    CorsOriginGuard.EnsureNoPlaceholders(allowedOrigins);
 }
 
 builder.Services.AddCors(options =>
@@ -163,12 +176,21 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 // Add Audit Log Service
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 
-// Add Rate Limiting
-builder.Services.Configure<RateLimitOptions>(options =>
+// Add Rate Limiting. The values are bound from the "RateLimiting" section so
+// a deployment can tune them without a rebuild; when the section is absent the
+// defaults on RateLimitOptions apply (100 reads and 10 writes per minute).
+builder.Services.Configure<RateLimitOptions>(
+    builder.Configuration.GetSection("RateLimiting"));
+
+// HSTS is applied by the framework's UseHsts middleware. The values are
+// configured here because UseHsts takes no options in the minimal hosting
+// model. SecurityHeadersMiddleware used to append the header as well, which
+// meant production responses carried it twice.
+builder.Services.Configure<HstsOptions>(options =>
 {
-    options.GlobalLimit = 100; // 100 requests per minute for reads
-    options.WriteLimit = 10; // 10 requests per minute for writes
-    options.WindowInSeconds = 60;
+    options.MaxAge = TimeSpan.FromDays(365);
+    options.IncludeSubDomains = true;
+    options.Preload = true;
 });
 
 var app = builder.Build();
@@ -194,66 +216,70 @@ using (var scope = app.Services.CreateScope())
 var enableHttpsRedirection = app.Configuration.GetValue("EnableHttpsRedirection", true);
 
 // Configure the HTTP request pipeline.
+//
+// The order is load-bearing, and the reasons are not obvious from the list:
+//
+//   SecurityHeaders   - first, so every response (including the Swagger UI)
+//                       carries the security headers.
+//   ExceptionHandling - wraps everything below it, so a throw anywhere
+//                       downstream becomes a ProblemDetails response.
+//   Swagger           - before the rate limiter, so loading the UI and its
+//                       static assets does not consume the API's request
+//                       budget.
+//   CORS              - before the rate limiter, so a 429 carries the
+//                       Access-Control-Allow-Origin header. A browser
+//                       cannot read an error it is not allowed to see.
+//   Authentication    - before the rate limiter, so the limiter can key on
+//                       the caller's id instead of falling back to the IP.
+//   RateLimiting      - after auth and CORS, before the endpoints.
 app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-app.UseMiddleware<RateLimitingMiddleware>();
 
-if (app.Environment.IsDevelopment())
+// Swagger is on by default in Development and off in every other
+// environment, so the container stack does not publish the API surface
+// unless it is asked to. Set EnableSwagger=true to expose it anywhere.
+var enableSwagger = app.Configuration.GetValue(
+    "EnableSwagger", app.Environment.IsDevelopment());
+
+if (enableSwagger)
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
-}
-else
-{
-    app.UseHsts();
-    // Swagger is disabled in production for security
-    // To enable temporarily, use: app.UseSwagger(); app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        options.DocumentTitle = "MoviesApi - MoviesApp";
+        options.DisplayRequestDuration();
+    });
 }
 
 app.UseCors("AllowFrontend");
 
-app.UseHttpsRedirection();
-
 app.UseAuthentication();
+
+app.UseMiddleware<RateLimitingMiddleware>();
+
+if (!app.Environment.IsDevelopment())
+{
+    // HSTS is owned by the framework here. SecurityHeadersMiddleware used to
+    // append the header as well, which meant production responses carried
+    // it twice.
+    app.UseHsts();
+}
+
+// Honour the toggle. The container image and docker-compose both set
+// EnableHttpsRedirection=false because the stack serves plain HTTP behind a
+// reverse proxy; calling UseHttpsRedirection unconditionally redirected every
+// request to an https endpoint that does not exist.
+if (enableHttpsRedirection)
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseAuthorization();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
 app.MapControllers();
 
-/* // Define endpoints
-app.MapGet("/movies", () => movies);
-
-app.MapGet("/movies/{id}", (int id) => 
-{
-    var movie = movies.FirstOrDefault(m => m.Id == id);
-    return movie is not null ? Results.Ok(movie) : Results.NotFound();
-});
-
-app.MapPost("/movies", (Movie movie) => 
-{
-    movie.Id = movies.Count > 0 ? movies.Max(m => m.Id) + 1 : 1;
-    movies.Add(movie);
-    return Results.Created($"/movies/{movie.Id}", movie);
-});
-
-app.MapPut("/movies/{id}", (int id, Movie updatedMovie) => 
-{
-    var index = movies.FindIndex(m => m.Id == id);
-    if (index == -1) return Results.NotFound();
-
-    updatedMovie.Id = id;
-    movies[index] = updatedMovie;
-    return Results.NoContent();
-});
-
-app.MapDelete("/movies/{id}", (int id) => 
-{
-    var index = movies.FindIndex(m => m.Id == id);
-    if (index == -1) return Results.NotFound();
-
-    movies.RemoveAt(index);
-    return Results.NoContent();
-}); */
-
 app.Run();
+// Exposes the top-level-statements Program class to the test project.
+public partial class Program { }

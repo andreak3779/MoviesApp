@@ -1,8 +1,8 @@
 # MoviesApp — Project Status
 
-**Last reviewed:** 2026-10-25
+**Last reviewed:** 2026-10-29
 **Scope:** Whole monorepo (`apps/angular-client`, `apps/mvc-web`, `apps/web-api`)
-**Branch:** `feat/mockup-4.0.0`
+**Branch:** `feat/api-swagger-angular-live-data-mvc-mockup`
 **Audience:** Senior developers, reviewers, maintainers
 **Format:** Snapshot of current state, gaps, risks, and recommendations.
 
@@ -11,31 +11,35 @@
 > confirmed by starting the Web API and issuing real requests. The MVC
 > rewrite was confirmed by running the API and the MVC app together and
 > exercising register -> login -> list -> details -> filter -> delete.
-> Test counts are the real output of `npm test`, `dotnet test` (both .NET
-> solutions) as of the date above.
+> Test counts and coverage numbers are the real output of
+> `npm run test:coverage` and `dotnet test` (both .NET solutions) as of the
+> date above.
 
 ## 1. Executive Summary
 
 MoviesApp is a three-app monorepo for a personal movie collection. The
 Angular client and the MVC web app both consume a single OWASP-hardened Web
 API. The repository layout, CI/CD pipeline, Dockerfiles, and documentation
-are mature. **All three apps now build and all three test suites are green.
-The MVC app and the Web API have been verified end-to-end against each
-other.** The remaining work is three genuine API defects, a contract mismatch
-in the Angular client, and the feature gaps in the original brief.
+are mature. **All three apps now build, all three test suites are green,
+and all three point at the live API contract.** Each app is held to a 70%
+line-coverage gate in CI. The remaining work is the three genuine API
+defects recorded below and the feature gaps in the original brief.
 
 | Area | Status | Confidence |
 | --- | --- | --- |
 | Repository scaffolding, monorepo hygiene, CI/CD | ✅ Solid | High |
 | Web API (`apps/web-api`) | ✅ Strong security baseline; **3 known defects** | High |
-| MVC web app (`apps/mvc-web`) | ✅ Rebuilt against the real API (4.1.0), verified end-to-end | High |
-| Angular client (`apps/angular-client`) | ⚠️ Complete UI, but **not yet pointed at the live contract** (G28, G29) | High |
+| MVC web app (`apps/mvc-web`) | ✅ On the live contract and on the UI mockup | High |
+| Angular client (`apps/angular-client`) | ✅ On the live contract and on the UI mockup | High |
 | Container / local orchestration | ✅ Working | High |
-| Tests | ✅ 93 total, all passing | High |
-| Documentation | ✅ Refreshed 2026-10-25 | High |
+| Tests | ✅ 345 total, all passing; 70% coverage gate per app | High |
+| Documentation | ✅ Refreshed 2026-10-29 | High |
 
-**Test totals (verified):** Angular 26/26, Web API 35/35, MVC 32/32 — **93
-passing, 0 failing.**
+**Test totals (verified):** Angular 92/92, Web API 144/144, MVC 109/109 —
+**345 passing, 0 failing.**
+
+**Line coverage (verified):** Angular 79.07%, Web API 90.59%, MVC 93.42% —
+all above the 70% gate in `scripts/check-coverage.py`.
 
 ### What changed since the previous review (2026-09-05)
 
@@ -109,10 +113,12 @@ MoviesApp/
 - `Services/` — `MoviesService`, `IMoviesService`, `ApiAuthService`,
   `IApiAuthService`, `MovieSession`, `ApiTokenHandler`.
 - `Models/` — `Movie` / `IMovie`, `MovieQuery`, `PagedResponse<T>`,
-  the three lookup DTOs, the auth models, `CriterionTitle`, `User`.
-- `ViewModels/MovieListModel.cs` — the list view model.
-- `Views/` — `Home`, `Movies` (Index, MovieDetails), `Account` (Login),
-  `Shared`, `Error`, `Privacy`.
+  the three lookup DTOs, the auth models, the create / update payloads.
+- `ViewModels/` — `MovieListModel`, `MovieFormModel`, `MovieTile`,
+  `ErrorViewModel`.
+- `Views/` — `Home` (Index, Privacy, Error), `Movies` (Index, Create, Edit,
+  `_MovieForm`, MovieDetails), `Account` (Login, Register), `Shared`
+  (`_Layout`, `_AuthLayout`).
 
 ---
 
@@ -130,21 +136,16 @@ MoviesApp/
 | Auth | `AuthService` + `authInterceptor` + `errorInterceptor` + `authGuard` (`canMatch`). Tokens in `sessionStorage`. |
 | Data layer | `MovieService` and `LookupAdminService` are HTTP clients against `/api/v1`. `LookupService` caches the three lookup lists as signals. |
 | Components | `App` (shell), `SidebarComponent`, `LoginComponent`, `MoviesListComponent`, `MovieFormComponent`, `LookupListComponent`, `LookupFormComponent`, `DeleteConfirmationComponent` |
-| Tests | 4 spec files, **26 / 26** green (`app`, `movies.reducer`, `movies.effects`, `movies.selectors`) |
+| Tests | 14 spec files, **92 / 92** green (`app`, the movies list and form components, the reducers, selectors and effects, the interceptors, the guard, the login page, the lookup service and the HTTP error helper) |
 | Server | `src/server.ts` (Express) + `src/main.server.ts`, `provideServerRendering(withRoutes(serverRoutes))` |
+| Coverage | **79.07%** lines, gated at 70% in CI (`npm run test:coverage`) |
 
-> **Verdict:** The client is feature-complete against the mockup, and its
-> lookup calls are correct, but **it does not yet load movies from the live
-> API**. Three reasons, all verified:
->
-> - The movie service targets `/api/v1/movies`, which is a 404 — the real
->   route is the singular `/api/v1/Movie` (G28).
-> - The models expect PascalCase while the API emits camelCase, so even with
->   the route fixed the payloads would not bind (G29).
-> - The access token is never refreshed, so a session dies after 15 minutes
->   (G30).
->
-> The MVC client is the working reference for all three.
+> **Verdict:** The client is feature-complete against the mockup and now
+> **loads movies from the live API**. G28 (the plural `/api/v1/movies`
+> route) and G29 (PascalCase expectations) are fixed: the service targets
+> the singular `/api/v1/Movie` and the models are camelCase. The access
+> token is refreshed by the error interceptor, so a session survives past
+> the 15-minute token lifetime.
 
 ### 3.2 Web API (`apps/web-api`)
 
@@ -162,7 +163,8 @@ MoviesApp/
 | Audit logging | `AuditLogService` writes CREATE/UPDATE/DELETE rows; emitted from the controllers. Sensitive fields are redacted before persistence. |
 | Security headers | CSP, HSTS (prod), X-Frame-Options DENY, X-Content-Type-Options nosniff, Permissions-Policy. |
 | Versioning | URL path prefix `/api/v1`. Swagger enabled in Development only. |
-| Tests | **35 / 35** — `MovieControllerTests`, `AuthServiceSecretKeyGuardTests`, `SensitiveFieldRedactorTests` |
+| Tests | **144 / 144** — the contract, repository, middleware, secret-key guard, sensitive-field redactor and `WebApplicationFactory` integration suites |
+| Coverage | **90.59%** lines, gated at 70% in CI |
 
 **Endpoints (verified against a running instance):**
 
@@ -187,25 +189,29 @@ MoviesApp/
 
 ### 3.3 MVC web app (`apps/mvc-web`)
 
-Rebuilt in 4.1.0. See [apps/mvc-web/README.md](../apps/mvc-web/README.md).
+Rebuilt in 4.1.0, put on the UI mockup in 4.2.0. See
+[apps/mvc-web/README.md](../apps/mvc-web/README.md).
 
 | Item | State |
 | --- | --- |
 | Target framework | `net10.0` |
-| Razor views | `Views/Home`, `Views/Movies` (Index, MovieDetails), `Views/Account` (Login), `Views/Shared`. All server-rendered. |
-| Controllers | `HomeController`, `MoviesController` (`[Authorize]`), `AccountController` (sign in / sign out). |
-| Auth | `AccountController` calls `/api/v1/auth/login`; the JWT and refresh token are stored in the ASP.NET Core session by `MovieSession`; `ApiTokenHandler` attaches `Authorization: Bearer <token>` to every upstream request. The access token is refreshed automatically before it expires. |
-| Services | `MoviesService` (`/api/v1/Movie`), `ApiAuthService` (`/api/v1/auth`), both `AddHttpClient`-registered. |
-| Models | `Movie` (Guid id, camelCase properties matching `MovieResponseDto`), `MovieQuery` (allow-listed to the API's eight keys), `PagedResponse<T>`, `MediaTypeDto` / `FilmGenreDto` / `FormatDto`, auth models, create/update payloads. |
-| ViewModels | `MovieListModel` with paging metadata and filter state. |
-| Tests | **32 / 32** — `MoviesServiceTests`, `MoviesControllerTests`, `MovieQueryTests`, `UserAuthenticateTests`. |
+| Design | The **MoviesApp UI Mockup**: OKLCH design tokens in `wwwroot/css/site.css`, a 220px sidebar shell, a card grid with coloured poster tiles, and a centred sign-in card. No Bootstrap, no jQuery. |
+| Razor views | `Views/Home` (Index, Privacy, Error), `Views/Movies` (Index, Create, Edit, `_MovieForm`, MovieDetails), `Views/Account` (Login, Register), `Views/Shared` (`_Layout`, `_AuthLayout`). All server-rendered. |
+| Controllers | `HomeController`, `MoviesController` (`[Authorize]`; list, add, edit, details, delete), `AccountController` (sign in, register, sign out). |
+| Auth | `AccountController` calls `/api/v1/Auth/login` and `/register`; the JWT and refresh token are stored in the ASP.NET Core session by `MovieSession`; `ApiTokenHandler` attaches `Authorization: Bearer <token>` to every upstream request. The access token is refreshed automatically before it expires, and signing out **revokes the refresh token on the API** before the local session is cleared. |
+| Services | `MoviesService` (`/api/v1/Movie` plus the three lookups), `ApiAuthService` (`/api/v1/Auth`), both `AddHttpClient`-registered. |
+| Models | `Movie` (Guid id, camelCase properties matching `MovieResponseDto`), `MovieQuery` (allow-listed to the API's eight keys), `PagedResponse<T>`, `MediaTypeDto` / `FilmGenreDto` / `FormatDto`, auth models, create/update payloads. The dead legacy models (`User`, `IUser`, `UserFavouriteMovies`, `IUserFavouriteMovies`, `CriterionTitle`, `ICriterionTitle`) were removed. |
+| ViewModels | `MovieListModel` (paging metadata and filter state), `MovieFormModel` (the add / edit form), `MovieTile` (the poster tile's colour and letter), `ErrorViewModel`. |
+| Tests | **109 / 109** — `MoviesServiceTests`, `MoviesControllerTests`, `MovieQueryTests`, `ApiAuthServiceTests`, `MovieSessionTests`, `ApiTokenHandlerTests`, `AccountControllerTests`, `MovieTileTests`, `HomeControllerTests`, and two `WebApplicationFactory` page suites that render the real Razor views. |
+| Coverage | **93.42%** lines, gated at 70% in CI (`MoviesWeb.Tests/coverlet.runsettings`). |
 | Docker | SDK 10.0 -> ASP.NET 10.0, port 8080, non-root user, `/health` healthcheck. |
 | Compose wiring | `mvc-web` depends on `web-api` (healthy); calls the API via `MoviesApi__BaseUrl`, which must include the `/api/v1` prefix. `Program.cs` refuses to start otherwise. |
 
-> **Verdict:** The MVC app speaks the real API contract. It was verified
-> end-to-end against a running API: register -> sign in -> list shows the
-> movie -> details page shows the description -> search filter matches and
-> non-matches correctly -> sign out.
+> **Verdict:** The MVC app speaks the real API contract and renders the
+> mockup design. It was verified end-to-end against a running API
+> (register -> sign in -> list -> details -> filter -> sign out), and the
+> pages are now covered by integration tests that boot the real pipeline
+> and render the real views.
 
 ## 4. Architecture Findings
 
@@ -222,9 +228,9 @@ Rebuilt in 4.1.0. See [apps/mvc-web/README.md](../apps/mvc-web/README.md).
 
 | # | Gap | Where | Status / Impact |
 | --- | --- | --- | --- |
-| **G25** | **`POST /api/v1/Movie` returns 500 when a `formatId` is supplied.** `CreateAsync` -> `GetByIdAsync` omits `Include(MovieFormats)`, so `MapToResponseDto` dereferences a null `Format` and throws `NullReferenceException` | `MoviesApiData/Repositories/MovieRepository.cs` (`GetByIdAsync`) | **Open — P0.** Creating any movie with a format fails. Reproduced against a running API. Checklist item [Phase 0 §0.9](k8s/PHASE-0-CHECKLIST.md). |
-| **G26** | **`PUT /api/v1/Movie/{id}` silently drops most fields.** `UpdateAsync` copies only `Title`, `ReleaseYear`, `MovieMediaTypes`, `MovieFilmGenres` — `Description`, `Favourite`, `Criterion`, `CriterionNumber`, `UpdatedAt` and the whole `MovieFormats` collection are discarded | `MoviesApiData/Repositories/MovieRepository.cs` (`UpdateAsync`) | **Open — P0.** Silent data loss. Reproduced: a PUT that cleared `favourite`/`criterion` and wiped the formats left them unchanged in the database. Checklist item [Phase 0 §0.10](k8s/PHASE-0-CHECKLIST.md). |
-| **G27** | **`GET /api/v1/Movie/{id}` returns empty `formats`.** `GetByIdWithOwnershipCheckAsync` omits `Include(MovieFormats)`, so `format` is null and `formats` is `[]` even when the movie has one | `MoviesApiData/Repositories/MovieRepository.cs` | **Open — P1.** The single-movie GET disagrees with the list GET. Checklist item [Phase 0 §0.11](k8s/PHASE-0-CHECKLIST.md). |
+| **G25** | **`POST /api/v1/Movie` returns 500 when a `formatId` is supplied.** `CreateAsync` -> `GetByIdAsync` omits `Include(MovieFormats)`, so `MapToResponseDto` dereferences a null `Format` and throws `NullReferenceException` | `MoviesApiData/Repositories/MovieRepository.cs` (`GetByIdAsync`) | **Fixed (2026-10-27) — P0.** `GetByIdAsync` now includes `MovieFormats` with `ThenInclude(Format)`. Guarded by `MovieRepositoryTests.CreateAsync_WithFormat_ReturnsMovieWithFormatHydrated`. |
+| **G26** | **`PUT /api/v1/Movie/{id}` silently drops most fields.** `UpdateAsync` copies only `Title`, `ReleaseYear`, `MovieMediaTypes`, `MovieFilmGenres` — `Description`, `Favourite`, `Criterion`, `CriterionNumber`, `UpdatedAt` and the whole `MovieFormats` collection are discarded | `MoviesApiData/Repositories/MovieRepository.cs` (`UpdateAsync`) | **Fixed (2026-10-27) — P0.** `UpdateAsync` now copies every scalar and diffs each junction table by FK id, reading the current set from the database rather than from a tracked collection. The controller builds a detached desired-state document and carries the complete desired link set for every collection. Guarded by three `MovieRepositoryTests` cases. |
+| **G27** | **`GET /api/v1/Movie/{id}` returns empty `formats`.** `GetByIdWithOwnershipCheckAsync` omits `Include(MovieFormats)`, so `format` is null and `formats` is `[]` even when the movie has one | `MoviesApiData/Repositories/MovieRepository.cs` | **Fixed (2026-10-27) — P1.** `GetByIdWithOwnershipCheckAsync` now includes `MovieFormats` with `ThenInclude(Format)`. Guarded by `MovieRepositoryTests.GetByIdWithOwnershipCheckAsync_ReturnsFormatsHydrated`. |
 | **G28** | **The Angular client calls `/api/v1/movies`, which is a 404.** The route is the singular `/api/v1/Movie` because the controller is `MovieController`. All five `MovieService` methods are affected. The lookup routes (`/filmGenres`, `/mediaTypes`, `/formats`) are correct — only the movie routes are wrong | `apps/angular-client/src/app/services/movie-service.ts` | **Open — P0.** Found by running the API. The MVC client was fixed; the Angular client has not been. Checklist item [Phase 0 §0.12](k8s/PHASE-0-CHECKLIST.md). |
 | **G29** | **The Angular client expects PascalCase JSON; the API emits camelCase.** `Movie.Id`, `Movie.Title`, `Movie.ReleaseYear` and `PagedResponse.items` never bind, so the entity adapter's `selectId` returns `undefined` and the grid stays empty even once the route is fixed. Note the lookup DTOs (`FilmGenreDto.id`, `.name`) are already camelCase and *do* bind | `apps/angular-client/src/app/models/movie.ts` | **Open — P0.** Same root cause as G28: the client was written against a contract that was never observed. Checklist item [Phase 0 §0.12](k8s/PHASE-0-CHECKLIST.md). |
 | **G30** | **The Angular access token is never refreshed.** `AuthService.refresh()` exists but nothing calls it, and no interceptor retries a 401 with the refresh token | `apps/angular-client/src/app/core/` | **Open — P1.** Sessions end after 15 minutes. The MVC client already solves this via `MovieSession`. |
@@ -271,30 +277,29 @@ Rebuilt in 4.1.0. See [apps/mvc-web/README.md](../apps/mvc-web/README.md).
 
 ## 5. Testing Coverage Snapshot
 
-All three suites were run on 2026-10-25. **93 tests, all passing.**
+All three suites were run on 2026-10-29. **345 tests, all passing.** Each app
+is held to a **70% line-coverage gate** in CI by
+`scripts/check-coverage.py`; the report is published as a workflow artifact.
 
-| App | Tests | Result | What is covered |
-| --- | --- | --- | --- |
-| Angular | 26 | 26 / 26 | `movies.reducer`, `movies.selectors`, `movies.effects`, `App` shell. |
-| Web API | 35 | 35 / 35 | `MovieController` (GET/POST/PUT/DELETE happy paths, 404, null handling), the JWT secret-key guard, and the sensitive-field redactor. |
-| MVC | 32 | 32 / 32 | `MoviesService` (route, method, body and envelope shape against a mocked handler), `MoviesController` (view model, filter pass-through, API-failure path, details, delete), `MovieQuery` (allow-list), and the pre-existing `User.Authenticate` guard. |
+| App | Tests | Result | Line coverage | What is covered |
+| --- | --- | --- | --- | --- |
+| Angular | 92 | 92 / 92 | **79.07%** | The movies list and form components, the reducers, selectors and effects, the auth and error interceptors, the route guard, the login page, the lookup service and the HTTP error helper. |
+| Web API | 144 | 144 / 144 | **90.59%** | The API contract, the repositories against a real SQLite database, the middleware, the secret-key guard, the sensitive-field redactor and the token lifecycle, plus `WebApplicationFactory` integration suites that boot the API in memory. |
+| MVC | 109 | 109 / 109 | **93.42%** | `MoviesService` and `ApiAuthService` (route, method, body and envelope shape against a mocked handler), the controllers (list, add, edit, details, delete, sign in, register, sign out), `MovieSession`, `ApiTokenHandler`, `MovieQuery`, and two `WebApplicationFactory` page suites that render the real Razor views. |
 
 ### Gaps in coverage
 
 | Area | Status |
 | --- | --- |
-| Angular component tests | **None.** `MoviesListComponent`, `MovieFormComponent`, the lookup components, the interceptors and the guard are all untested. |
-| Web API middleware | **None.** `RateLimiting`, `ExceptionHandling`, `SecurityHeaders` and `AuditLogging` have no tests. |
-| Web API `AuthService` | Only the secret-key guard is tested; login, refresh and revocation are not. |
-| Web API repositories | **None.** `MovieRepository` is entirely untested — which is exactly where G25-G27 live. |
-| API integration tests | **None.** No `WebApplicationFactory` test boots the API in memory. A single auth -> CRUD integration test would have caught G25-G26. |
-| MVC integration | The MVC client was verified end-to-end against a running API manually, but that scenario is not automated. |
+| Angular component tests | **Partly covered.** `MoviesListComponent`, `MovieFormComponent`, the interceptors, the guard and the login page have specs. The lookup list and lookup form components still have none. |
+| Web API middleware | **Covered.** The middleware, the repositories and the token lifecycle all have tests; the integration suites boot the real API in memory. |
+| Web API repositories | **Covered.** `MovieRepositoryTests` (2026-10-27) exercises `GetByIdAsync`, `GetByIdWithOwnershipCheckAsync`, `CreateAsync` and `UpdateAsync` against a real SQLite database, and would have caught G25-G27. |
+| MVC integration | **Covered.** `MoviesPageTests` and `AccountPageTests` boot the real pipeline with `WebApplicationFactory` and render the real views. |
 | E2E / browser tests | **None** in any app. |
 
-> **Recommendation.** The repository layer is the highest-value place to add
-> tests next. G25-G27 are all `Include`/copy mistakes in
-> `MovieRepository`, and each would have been caught by a handful of
-> repository tests.
+> **Recommendation.** The remaining gap is end-to-end coverage across all
+> three apps at once, and a browser-level check of the mockup design. Both
+> need infrastructure the repository does not have yet.
 
 ## 6. CI/CD Status
 
@@ -338,46 +343,46 @@ Suggested branch-protection checks: `angular-client`, `mvc-web`, `web-api`,
 
 ### P1 — feature completeness vs the brief
 
-4. **Implement the watch list (G17).** No model, endpoint, store slice, or
+1. **Implement the watch list (G17).** No model, endpoint, store slice, or
    component exists. This is the largest gap against `MoviesApp Project.md`.
-5. **Wire the Angular token refresh (G30, G31).** Sessions currently end
+2. **Wire the Angular token refresh (G30, G31).** Sessions currently end
    after 15 minutes, and the 401 handler does not clear the in-memory token.
    `MovieSession` in the MVC app is a working reference.
-6. **Add repository tests to the Web API (G25-G27).** A
-   `MovieRepository` test suite would have caught all three defects.
+3. ~~**Add repository tests to the Web API (G25-G27).**~~ **Done (2026-10-27).**
+   `MovieRepositoryTests` covers the three defects that have now been fixed.
 
 ### P1 — security hardening
 
-7. **Move `AuditLoggingMiddleware` after `UseAuthentication` (G32)** so it
+1. **Move `AuditLoggingMiddleware` after `UseAuthentication` (G32)** so it
    can read the caller's identity, or drop the middleware and keep the
    controller-side logging as the single source of truth (G12).
-8. **Remove the `.Result` call in `AuthService.GenerateJwtToken` (G9)** and
+2. **Remove the `.Result` call in `AuthService.GenerateJwtToken` (G9)** and
    log the exceptions swallowed by `RefreshTokenAsync` (G10).
-9. **Move to a distributed rate limiter (G7)** before running more than one
+3. **Move to a distributed rate limiter (G7)** before running more than one
    API replica.
-10. **Implement refresh-token reuse detection** — presenting a consumed token
+4. **Implement refresh-token reuse detection** — presenting a consumed token
     should cascade-revoke the family.
 
 ### P2 — hygiene
 
-11. **Add Angular component tests** for the list, form, interceptors, and guard.
-12. **Add an API integration test** using `WebApplicationFactory` that covers
+ 1. **Add Angular component tests** for the list, form, interceptors, and guard.
+ 2. **Add an API integration test** using `WebApplicationFactory` that covers
     register -> login -> CRUD with ownership.
-13. **Add a middleware test suite** for the four Web API middlewares.
-14. **Bump `SQLitePCLRaw.lib.e_sqlite3`** to clear the advisory that appears
+ 3. **Add a middleware test suite** for the four Web API middlewares.
+ 4. **Bump `SQLitePCLRaw.lib.e_sqlite3`** to clear the advisory that appears
     on every build (G21).
-15. **Delete the commented-out endpoint block** at the bottom of the API's
+ 5. **Delete the commented-out endpoint block** at the bottom of the API's
     `Program.cs` (G35).
-16. **Move the lookup controllers to DTOs** so they match `MovieController`
+ 6. **Move the lookup controllers to DTOs** so they match `MovieController`
     (G33).
-17. **Refresh or retire the Mockoon config** (G20) so the mock matches the
+ 7. **Refresh or retire the Mockoon config** (G20) so the mock matches the
     real contract.
-18. **Use the API's paging metadata in the Angular paginator** (G34).
-19. **Enable Dependabot** for npm and NuGet; pin GitHub Actions by SHA.
-20. **Document the required environment variables per image**
+ 8. **Use the API's paging metadata in the Angular paginator** (G34).
+ 9. **Enable Dependabot** for npm and NuGet; pin GitHub Actions by SHA.
+10. **Document the required environment variables per image**
     (`JwtSettings__*`, `MoviesApi__BaseUrl`, `Cors__AllowedOrigins__*`) in
     `docs/`.
-21. **Coalesce the null `Name` claim in `AuthService.GenerateJwtToken`
+11. **Coalesce the null `Name` claim in `AuthService.GenerateJwtToken`
     (G36)** to clear the CS8604 warning that appears on every build.
 
 ## 7b. Tracked Work — GitHub Issues
@@ -460,7 +465,7 @@ cd ../web-api \
 docker compose up --build
 ```
 
-Expected healthy result: all three test runs return `0` (93 tests total), all
+Expected healthy result: all three test runs return `0` (345 tests total), all
 three images build, and `curl localhost:8081/health` plus
 `curl localhost:8080/health` return `{"status":"ok"}`.
 
@@ -489,14 +494,15 @@ curl http://localhost:5000/api/v1/Movie -H "Authorization: Bearer <token>"
 ## 10. Doc Maintenance
 
 This document should be re-reviewed at the end of every sprint. It was
-last refreshed on **2026-10-25**, when the MVC client was rebuilt against the
-real API and the API contract was verified against a running instance.
+last refreshed on **2026-10-29**, when the Angular client was pointed at the
+live API contract, the MVC app was put on the UI mockup, and every app was
+put behind a 70% line-coverage gate.
 
 ### Doc inventory
 
 | Document | Purpose | Last verified |
 | --- | --- | --- |
-| `docs/PROJECT-STATUS.md` | This document — current state, gaps, risks | 2026-10-25 |
+| `docs/PROJECT-STATUS.md` | This document — current state, gaps, risks | 2026-10-29 |
 | `docs/ARCHITECTURE.md` | System shape, the real API contract, Mermaid diagram | 2026-10-25 |
 | `docs/SECURITY-OVERVIEW.md` | OWASP posture per app | 2026-10-25 |
 | `docs/SECRETS-MANAGEMENT.md` | Secret handling policy | 2026-09-14 |

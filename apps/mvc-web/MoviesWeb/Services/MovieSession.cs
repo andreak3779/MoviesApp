@@ -14,6 +14,16 @@ namespace MoviesWeb.Services
         /// <summary>Gets the signed-in user's email address, if known.</summary>
         string? Email { get; }
 
+        /// <summary>Gets the current access token, if any.</summary>
+        string? AccessToken { get; }
+
+        /// <summary>Gets the current refresh token, if any.</summary>
+        /// <remarks>
+        /// Signing out revokes this token server-side, so it has to be
+        /// readable by the sign-out path.
+        /// </remarks>
+        string? RefreshToken { get; }
+
         /// <summary>Stores the tokens returned by a successful sign-in.</summary>
         void SignIn(AuthResponse auth);
 
@@ -80,6 +90,12 @@ namespace MoviesWeb.Services
 
         /// <inheritdoc />
         public string? Email => GetSession()?.GetString(EmailKey);
+
+        /// <inheritdoc />
+        public string? AccessToken => GetSession()?.GetString(AccessTokenKey);
+
+        /// <inheritdoc />
+        public string? RefreshToken => GetSession()?.GetString(RefreshTokenKey);
 
         /// <inheritdoc />
         public void SignIn(AuthResponse auth)

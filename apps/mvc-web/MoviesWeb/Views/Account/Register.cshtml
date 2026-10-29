@@ -1,0 +1,56 @@
+@model MoviesWeb.Models.RegisterRequest
+@{
+    ViewData["Title"] = "Create account";
+    Layout = "_AuthLayout";
+}
+
+<div class="login-card">
+    <h1>Create account</h1>
+    <p class="hint">Your account lives in the Movies API, so you can use it in any client.</p>
+
+    @if (!string.IsNullOrEmpty(ViewData["Error"] as string))
+    {
+        <p class="error">@ViewData["Error"]</p>
+    }
+
+    <form method="post" asp-controller="Account" asp-action="Register">
+        <div asp-validation-summary="ModelOnly"></div>
+
+        <label asp-for="Email">
+            Email
+            <input asp-for="Email" type="email" autocomplete="username" />
+        </label>
+        <span asp-validation-for="Email" class="field-error"></span>
+
+        <div class="names">
+            <label asp-for="FirstName">
+                First name
+                <input asp-for="FirstName" type="text" autocomplete="given-name" />
+            </label>
+            <label asp-for="LastName">
+                Last name
+                <input asp-for="LastName" type="text" autocomplete="family-name" />
+            </label>
+        </div>
+
+        <label asp-for="Password">
+            Password
+            <input asp-for="Password" type="password" autocomplete="new-password" />
+        </label>
+        <span asp-validation-for="Password" class="field-error"></span>
+        <p class="hint rules">At least 8 characters, with an uppercase letter, a lowercase letter and a number.</p>
+
+        <label asp-for="ConfirmPassword">
+            Confirm password
+            <input asp-for="ConfirmPassword" type="password" autocomplete="new-password" />
+        </label>
+        <span asp-validation-for="ConfirmPassword" class="field-error"></span>
+
+        <button type="submit" class="btn">Create account</button>
+    </form>
+
+    <p class="hint">
+        Already have an account?
+        <a asp-controller="Account" asp-action="Login">Sign in</a>.
+    </p>
+</div>
