@@ -175,3 +175,7 @@ Use the monorepo runbook for branch strategy, subtree imports, and gate checks:
 Per-app documentation lives with the app: [`apps/angular-client/README.md`](apps/angular-client/README.md),
 [`apps/mvc-web/README.md`](apps/mvc-web/README.md),
 [`apps/web-api/README.md`](apps/web-api/README.md).
+
+## License
+
+MIT. See [LICENSE](LICENSE).
