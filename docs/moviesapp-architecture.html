@@ -1356,11 +1356,6 @@
                 <td><code>apps/angular-client/package.json</code>, <code>Dockerfile</code>, <code>.github/workflows/validate-apps.yml</code></td>
               </tr>
               <tr>
-                <td>Root <code>k8s/</code> manifests</td>
-                <td>Only design and learning documents under <code>docs/k8s/</code>. No root manifest directory exists.</td>
-                <td><code>README.md</code> Kubernetes section</td>
-              </tr>
-              <tr>
                 <td>Validation runs on PR and schedule</td>
                 <td><code>validate-apps</code>, <code>container-images</code>, and <code>release-images</code> are <code>workflow_dispatch</code> only.</td>
                 <td><code>.github/workflows/*.yml</code></td>
@@ -1369,11 +1364,6 @@
                 <td>Full stack works with compose</td>
                 <td>The API runs in Production with no JWT secret supplied, so its fail-fast guard should abort startup.</td>
                 <td><code>docker-compose.yml</code>, <code>Program.cs</code> secret guard</td>
-              </tr>
-              <tr>
-                <td>Secrets and databases scrubbed</td>
-                <td><code>.env-azure</code> and <code>MoviesApi/movies.db{,-shm,-wal}</code> are still tracked in Git.</td>
-                <td><code>git ls-files</code></td>
               </tr>
               <tr>
                 <td>Both front ends consume the API</td>
@@ -1453,17 +1443,6 @@
             <p>
               <code>EnsureCreated()</code> builds a fresh schema from the model and ignores the
               checked-in migrations. Existing databases never receive schema changes.
-            </p>
-          </div>
-        </div>
-        <div class="finding">
-          <span class="sev p1">P1</span>
-          <div>
-            <h3>Secrets and runtime databases remain in Git</h3>
-            <p>
-              The September incident remediation removed one database copy, but
-              <code>.env-azure</code> and the API's SQLite files are still tracked despite the
-              root <code>.gitignore</code>.
             </p>
           </div>
         </div>

@@ -15,7 +15,6 @@ title = "MoviesApp gitleaks rules"
   paths = [
     '''appsettings\.json$''',
     '''appsettings\.Development\.json$''',
-    '''docs/SECURITY-INCIDENT-2026-09-14\.md$''',
   ]
   regexes = [
     '''CHANGE_THIS_TO_A_SECURE_RANDOM_STRING_MIN_32_CHARS_IN_PRODUCTION''',

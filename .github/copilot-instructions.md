@@ -39,7 +39,7 @@ This file gives concise, actionable conventions for AI coding agents working in 
   repo-level `.gitignore` already blocks these patterns. If you find a way around them,
   stop and rotate the secret.
 - See [docs/SECRETS-MANAGEMENT.md](../docs/SECRETS-MANAGEMENT.md) and
-  [docs/SECURITY-INCIDENT-2026-09-14.md](../docs/SECURITY-INCIDENT-2026-09-14.md).
+  [docs/SECURITY-OVERVIEW.md](../docs/SECURITY-OVERVIEW.md).
 
 ## Editing Guidance for Agents
 - Always run the repository's build and tests after non-trivial changes in `apps/angular-client/`:

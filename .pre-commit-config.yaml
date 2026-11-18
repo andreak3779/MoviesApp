@@ -5,7 +5,7 @@
 # Optional global secret scanner:
 #   pre-commit install --hook-type pre-push
 #
-# See docs/SECURITY-OVERVIEW.md and docs/SECURITY-INCIDENT-2026-09-14.md.
+# See docs/SECURITY-OVERVIEW.md.
 
 repos:
   - repo: https://github.com/gitleaks/gitleaks
@@ -24,8 +24,7 @@ repos:
         name: Detect hard-coded secrets (Yelp baseline)
         args: ["--baseline-files", ".secrets.baseline"]
 
-  # Generic guard rails against the leak categories from
-  # SECURITY-INCIDENT-2026-09-14.md:
+  # Generic guard rails against committing runtime state and secrets:
   #   - no *.db anywhere
   #   - no .env* files except .env.example
   - repo: local

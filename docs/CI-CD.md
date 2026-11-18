@@ -8,7 +8,7 @@ The monorepo now uses root-owned GitHub Actions workflows under `.github/workflo
 | --- | --- | --- |
 | `validate-apps.yml` | PR, schedule, manual (`workflow_dispatch` with a target app) | Per-app restore, build and test. |
 | `container-images.yml` | Manual + scheduled full | Per-app Docker image build (no push). |
-| `release-images.yml` | Manual + `release-*` tag push | Per-app publish to GHCR (and ACR). |
+| `release-images.yml` | Manual + `release-*` tag push | Per-app publish to GHCR. |
 | `security.yml` | Every push | Repository-wide secret scanning. |
 
 ### What `validate-apps.yml` runs per app

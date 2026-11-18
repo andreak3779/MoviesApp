@@ -98,9 +98,7 @@ SecurityHeaders → ExceptionHandling → RateLimiting → AuditLogging
 > the controllers emit the audit rows that are actually stored. Moving the
 > middleware after `UseAuthentication` would enable it.
 
-See [SECURITY-OVERVIEW.md](SECURITY-OVERVIEW.md) for the full security posture
-and [docs/SECURITY-INCIDENT-2026-09-14.md](SECURITY-INCIDENT-2026-09-14.md)
-for the incident that motivated the current controls.
+See [SECURITY-OVERVIEW.md](SECURITY-OVERVIEW.md) for the full security posture.
 
 ---
 

@@ -87,7 +87,7 @@ build_overlay() {
   info "Building overlay at $OVERLAY"
   rm -rf "$OVERLAY"; mkdir -p "$OVERLAY"
   if [[ -z "$(ls -A "$SRC" 2>/dev/null)" ]]; then
-    warn "$SRC/ is empty — skipping overlay generation. Start the cluster anyway for hands-on kubectl practice (see docs/k8s/learn/README.md)."
+    warn "$SRC/ is empty — skipping overlay generation. Start the cluster anyway for hands-on kubectl practice."
     return 0
   fi
   for f in "$SRC"/*.yaml; do

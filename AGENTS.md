@@ -30,8 +30,7 @@ Security
   `secrets.json`, and `appsettings.*.local.json`. If you find yourself needing to add a new pattern,
   add it to `.gitignore` instead of an ad-hoc commit.
 - See [docs/SECRETS-MANAGEMENT.md](docs/SECRETS-MANAGEMENT.md) and
-  [docs/SECURITY-INCIDENT-2026-09-14.md](docs/SECURITY-INCIDENT-2026-09-14.md) for the
-  prior incident and current policy.
+  [docs/SECURITY-OVERVIEW.md](docs/SECURITY-OVERVIEW.md) for the current policy.
 
 When unsure
 - If intent is unclear or changes are large, open an issue describing the proposed approach and wait for maintainer confirmation.

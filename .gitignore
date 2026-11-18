@@ -6,7 +6,7 @@
 # ----------------------------------------------------------------------
 
 ## Sensitive files (PII, secrets, runtime state)
-# SQLite databases (committed previously — see SECURITY-INCIDENT-2026-09-14.md)
+# SQLite databases (runtime state; never commit)
 *.db
 *.db-shm
 *.db-wal
@@ -78,3 +78,6 @@ Desktop.ini
 *.tmp
 logs/
 .tmp/
+
+# Local AI-tool settings
+.claude/

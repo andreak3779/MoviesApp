@@ -4,9 +4,9 @@ This document describes how secrets, credentials, and other sensitive
 values flow through the MoviesApp monorepo. It is the source of truth for
 new contributors and agent prompts.
 
-> **Background.** On **2026-09-14** a security audit found that two
-> SQLite databases and an Azure metadata file had been committed to git
-> history. See [SECURITY-INCIDENT-2026-09-14.md](SECURITY-INCIDENT-2026-09-14.md).
+> **Background.** Runtime database files and cloud metadata files must never
+> be committed. The `.gitignore`, pre-commit hooks and the gitleaks workflow
+> enforce this.
 
 ## Rules of the road
 
@@ -82,8 +82,7 @@ If you suspect a secret has been committed:
 1. Stop. Do not push further changes until the secret is rotated.
 2. Rotate the secret in the upstream system (e.g. revoke the JWT key, the
    PAT, the connection string).
-3. Open an issue tagging `security`. Reference
-   [SECURITY-INCIDENT-2026-09-14.md](SECURITY-INCIDENT-2026-09-14.md).
+3. Open an issue tagging `security`.
 4. Coordinate a `git filter-repo` rewrite with maintainers (any history
    rewrite is a coordinated force-push).
 

@@ -4,8 +4,8 @@ using Xunit;
 namespace MoviesApi.Tests;
 
 /// <summary>
-/// Covers the audit-log redaction rules from
-/// docs/SECURITY-INCIDENT-2026-09-14.md.
+/// Covers the audit-log redaction rules described in
+/// docs/SECURITY-OVERVIEW.md.
 /// </summary>
 public class SensitiveFieldRedactorTests
 {

@@ -5,7 +5,7 @@ namespace MoviesApi.Services;
 /// <summary>
 /// Strips password, token, and similar high-risk fields from arbitrary
 /// JSON payloads before they are persisted into <c>AuditLog.NewValues</c>
-/// / <c>OldValues</c>. See SECURITY-INCIDENT-2026-09-14.md for context.
+/// / <c>OldValues</c>. See docs/SECURITY-OVERVIEW.md.
 /// </summary>
 public static class SensitiveFieldRedactor
 {

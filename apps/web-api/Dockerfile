@@ -17,8 +17,7 @@ ENV ASPNETCORE_URLS=http://+:8080
 ENV EnableHttpsRedirection=false
 COPY --from=build /app/publish .
 # Strip any SQLite databases that crept into the publish output. The
-# movies.db file is created at runtime by the application. See
-# docs/SECURITY-INCIDENT-2026-09-14.md.
+# movies.db file is created at runtime by the application.
 RUN find /app -maxdepth 2 -type f \( -name '*.db' -o -name '*.db-shm' -o -name '*.db-wal' \) -delete || true \
     && chown -R app:app /app
 USER app

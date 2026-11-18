@@ -231,8 +231,8 @@ Rebuilt in 4.1.0, put on the UI mockup in 4.2.0. See
 | **G25** | **`POST /api/v1/Movie` returns 500 when a `formatId` is supplied.** `CreateAsync` -> `GetByIdAsync` omits `Include(MovieFormats)`, so `MapToResponseDto` dereferences a null `Format` and throws `NullReferenceException` | `MoviesApiData/Repositories/MovieRepository.cs` (`GetByIdAsync`) | **Fixed (2026-10-27) — P0.** `GetByIdAsync` now includes `MovieFormats` with `ThenInclude(Format)`. Guarded by `MovieRepositoryTests.CreateAsync_WithFormat_ReturnsMovieWithFormatHydrated`. |
 | **G26** | **`PUT /api/v1/Movie/{id}` silently drops most fields.** `UpdateAsync` copies only `Title`, `ReleaseYear`, `MovieMediaTypes`, `MovieFilmGenres` — `Description`, `Favourite`, `Criterion`, `CriterionNumber`, `UpdatedAt` and the whole `MovieFormats` collection are discarded | `MoviesApiData/Repositories/MovieRepository.cs` (`UpdateAsync`) | **Fixed (2026-10-27) — P0.** `UpdateAsync` now copies every scalar and diffs each junction table by FK id, reading the current set from the database rather than from a tracked collection. The controller builds a detached desired-state document and carries the complete desired link set for every collection. Guarded by three `MovieRepositoryTests` cases. |
 | **G27** | **`GET /api/v1/Movie/{id}` returns empty `formats`.** `GetByIdWithOwnershipCheckAsync` omits `Include(MovieFormats)`, so `format` is null and `formats` is `[]` even when the movie has one | `MoviesApiData/Repositories/MovieRepository.cs` | **Fixed (2026-10-27) — P1.** `GetByIdWithOwnershipCheckAsync` now includes `MovieFormats` with `ThenInclude(Format)`. Guarded by `MovieRepositoryTests.GetByIdWithOwnershipCheckAsync_ReturnsFormatsHydrated`. |
-| **G28** | **The Angular client calls `/api/v1/movies`, which is a 404.** The route is the singular `/api/v1/Movie` because the controller is `MovieController`. All five `MovieService` methods are affected. The lookup routes (`/filmGenres`, `/mediaTypes`, `/formats`) are correct — only the movie routes are wrong | `apps/angular-client/src/app/services/movie-service.ts` | **Open — P0.** Found by running the API. The MVC client was fixed; the Angular client has not been. Checklist item [Phase 0 §0.12](k8s/PHASE-0-CHECKLIST.md). |
-| **G29** | **The Angular client expects PascalCase JSON; the API emits camelCase.** `Movie.Id`, `Movie.Title`, `Movie.ReleaseYear` and `PagedResponse.items` never bind, so the entity adapter's `selectId` returns `undefined` and the grid stays empty even once the route is fixed. Note the lookup DTOs (`FilmGenreDto.id`, `.name`) are already camelCase and *do* bind | `apps/angular-client/src/app/models/movie.ts` | **Open — P0.** Same root cause as G28: the client was written against a contract that was never observed. Checklist item [Phase 0 §0.12](k8s/PHASE-0-CHECKLIST.md). |
+| **G28** | **The Angular client calls `/api/v1/movies`, which is a 404.** The route is the singular `/api/v1/Movie` because the controller is `MovieController`. All five `MovieService` methods are affected. The lookup routes (`/filmGenres`, `/mediaTypes`, `/formats`) are correct — only the movie routes are wrong | `apps/angular-client/src/app/services/movie-service.ts` | **Fixed — P0.** Found by running the API. The MVC and Angular clients now call `/api/v1/Movie`. |
+| **G29** | **The Angular client expects PascalCase JSON; the API emits camelCase.** `Movie.Id`, `Movie.Title`, `Movie.ReleaseYear` and `PagedResponse.items` never bind, so the entity adapter's `selectId` returns `undefined` and the grid stays empty even once the route is fixed. Note the lookup DTOs (`FilmGenreDto.id`, `.name`) are already camelCase and *do* bind | `apps/angular-client/src/app/models/movie.ts` | **Fixed — P0.** Same root cause as G28: the client was written against a contract that was never observed. The Angular models now use the API's camelCase. |
 | **G30** | **The Angular access token is never refreshed.** `AuthService.refresh()` exists but nothing calls it, and no interceptor retries a 401 with the refresh token | `apps/angular-client/src/app/core/` | **Open — P1.** Sessions end after 15 minutes. The MVC client already solves this via `MovieSession`. |
 | **G31** | **`errorInterceptor` clears `sessionStorage` directly instead of calling `AuthService.clear()`,** so the in-memory token signal stays set and `authGuard.isAuthenticated()` still returns true after a 401 | `apps/angular-client/src/app/core/interceptors/error.interceptor.ts` | **Open — P1.** The guard will not bounce the user to `/login`. |
 | **G15** | Angular has no token-refresh strategy (superseded and narrowed by G30) | `apps/angular-client/src/app/core/services/auth.service.ts` | Open — see G30. |
@@ -246,7 +246,7 @@ Rebuilt in 4.1.0, put on the UI mockup in 4.2.0. See
 | **G16** | ~~No query/filter endpoint~~ — **fixed in 4.0.0**; `GET /api/v1/Movie` supports search, genre, media type, format, sort and paging | `apps/web-api/MoviesApi/Controllers/MovieController.cs` | Resolved. Filtering by criterion number and favourite is still not supported. |
 | **G17** | The watch list from the brief has no model, service, controller, endpoint, store slice, or component anywhere | All apps | Open — the largest remaining gap against the brief. |
 | **G33** | The lookup controllers bind and return domain entities (`FilmGenre`, `MediaType`, `Format`) rather than DTOs, unlike `MovieController` | `apps/web-api/MoviesApi/Controllers/FilmGenresController.cs`, `MediaTypesController.cs`, `FormatsController.cs` | Open — inconsistent contract and a mass-assignment surface. |
-| **G21** | `SQLitePCLRaw.lib.e_sqlite3` 2.1.11 has a known high-severity advisory. `AutoMapper` has since been raised to 16.2.0 | `apps/web-api/MoviesApiData/MoviesApiData.csproj` | Open — the warning still appears on every build. Part of [Phase 0](k8s/PHASE-0-CHECKLIST.md). |
+| **G21** | `SQLitePCLRaw.lib.e_sqlite3` 2.1.11 and `AutoMapper` 16.2.0 had known high-severity advisories | `apps/web-api/MoviesApiData/MoviesApiData.csproj` | **Fixed (2026-11-18).** `AutoMapper` is 16.3.0; `dotnet list package --vulnerable --include-transitive` reports no vulnerable packages. |
 | **G20** | The Mockoon config and `scripts/mock-server.js` still describe the old flat `/movies` contract with integer ids | `apps/angular-client/mockoon/movie-api.json`, `apps/angular-client/scripts/mock-server.js` | Open — CI starts the mock but the Angular tests inject a stubbed service, so it is no longer a faithful contract source. |
 | **G35** | A large commented-out `app.MapGet` endpoint block remains at the bottom of the API's `Program.cs` | `apps/web-api/MoviesApi/Program.cs` | Minor — cleanup. |
 | **G34** | The Angular paginator derives `hasMore` from `movies().length >= pageSize` and ignores the API's `hasNext` / `totalCount`; the NgRx effect also discards the paging metadata | `apps/angular-client/src/app/features/movies/movies-list.component.ts`, `store/movies/movies.effects.ts` | Open — the last page still shows a live "Next" button. |
@@ -369,8 +369,8 @@ Suggested branch-protection checks: `angular-client`, `mvc-web`, `web-api`,
  2. **Add an API integration test** using `WebApplicationFactory` that covers
     register -> login -> CRUD with ownership.
  3. **Add a middleware test suite** for the four Web API middlewares.
- 4. **Bump `SQLitePCLRaw.lib.e_sqlite3`** to clear the advisory that appears
-    on every build (G21).
+ 4. ~~Bump `SQLitePCLRaw.lib.e_sqlite3`~~ Done 2026-11-18 (G21): no vulnerable
+    packages remain.
  5. **Delete the commented-out endpoint block** at the bottom of the API's
     `Program.cs` (G35).
  6. **Move the lookup controllers to DTOs** so they match `MovieController`
@@ -508,16 +508,12 @@ put behind a 70% line-coverage gate.
 | `docs/SECRETS-MANAGEMENT.md` | Secret handling policy | 2026-09-14 |
 | `docs/CI-CD.md` | Workflows, change detection, required checks | 2026-10-25 |
 | `docs/CONTRIBUTING-RUNBOOK.md` | Contributor workflow | 2026-09-05 |
-| `docs/KUBERNETES-PLAN.md`, `docs/k8s/` | Deployment plan and manifests | 2026-10-25 (routes corrected) |
 | `docs/DOTNET10-*` | The .NET 10 migration record | 2026-09-05 (historical) |
 | `docs/PROJECT-SEPARATION-PLAN.md` | Proposal to split the monorepo | 2026-09-05 (proposal, not implemented) |
-| `docs/SECURITY-INCIDENT-2026-09-14*.md` | The credentials incident and its remediation | 2026-09-14 (historical) |
-| `docs/SEPTEMBER-SEARCH-SPRINT.md`, `docs/September Search Sprint.md` | Job-search sprint notes | 2026-09-19 (historical) |
 
 ### Known doc drift
 
-- `docs/PROJECT-SEPARATION-PLAN.md` and the September sprint documents are
-  historical records. They describe routes and states that have since moved
-  on; read them for context, not for current behaviour.
+- `docs/PROJECT-SEPARATION-PLAN.md` is a historical record. It describes routes and states that have since moved
+  on; read it for context, not for current behaviour.
 - `apps/angular-client/README.md` is still the default Angular CLI scaffold
   text and does not describe the application.
